@@ -1,0 +1,53 @@
+{
+  "register.closed": "🔴 Sự kiện đang tạm dừng, hiện không trong khung giờ mở đăng ký. Cửa sổ đăng ký mở vào **{openDay}** hàng tuần.",
+  "register.noRooms": "😥 Hiện chưa có phòng nào được cấu hình, vui lòng liên hệ BTC.",
+  "register.noValidDays": "😥 Hiện không còn ngày nào hợp lệ để đăng ký.",
+  "register.selectDatePlaceholder": "Chọn ngày live",
+  "register.step1": "**Bước 1/3:** Chọn ngày bạn muốn live:",
+  "register.sameDayLimitReached": "❌ Bạn đã có {count} lịch vào ngày này rồi (giới hạn {max} slot/ngày). Chọn ngày khác hoặc hủy lịch cũ trước khi đặt thêm.",
+  "register.noRoomsAvailable": "😥 Ngày này không còn phòng nào trống. Bạn quay lại bấm nút Đăng ký để chọn ngày khác nhé.",
+  "register.selectRoomPlaceholder": "Chọn phòng live",
+  "register.step2": "**Bước 2/3:** Đã chọn ngày. Giờ chọn phòng còn trống:",
+  "register.tooSoon": "😥 Tất cả khung giờ trong ngày này đều cách hiện tại chưa đủ {minHours} giờ theo quy định. Bạn thao tác lại từ đầu để chọn ngày khác nhé.",
+  "register.roomFull": "😥 Phòng này vừa hết slot trống trong ngày đã chọn. Bạn quay lại chọn phòng khác nhé.",
+  "register.selectTimePlaceholder": "Chọn giờ live",
+  "register.selectTimePlaceholderRange": "Chọn giờ live ({first} → {last})",
+  "register.step3": "**Bước 3/3:** Đã chọn phòng **{room}**. Giờ chọn khung giờ live:",
+  "register.slotExpired": "⚠️ Khung giờ này đã quá hạn đặt trước tối thiểu {minHours} giờ (hoặc cấu hình khung giờ vừa thay đổi), vui lòng thao tác lại từ đầu.",
+  "register.modalTitle": "Nội dung livestream",
+  "register.contentLabel": "Nội dung / Chủ đề (tối đa 50 ký tự)",
+  "register.contentPlaceholder": "Ví dụ: Live tâm sự, chơi game, học tập...",
+  "register.success": "✅ **Đăng ký thành công!**\n📍 Phòng: **{room}**\n🗓️ Thời gian: **{start} → {end}**\n📝 Nội dung: **{content}**\n\nBot sẽ tự động cấp quyền cho bạn đúng giờ live.",
+
+  "cancel.noActive": "Bạn không có lịch nào để hủy.",
+  "cancel.selectPlaceholder": "Chọn lịch muốn hủy",
+  "cancel.selectPrompt": "Chọn lịch bạn muốn hủy:",
+  "cancel.success": "✅ Đã hủy lịch thành công.",
+
+  "schedule.empty": "Bạn chưa có lịch nào đang chờ/live.",
+  "schedule.statusLive": "🔴 Đang live",
+  "schedule.statusPending": "🟡 Đang chờ",
+  "schedule.list": "**Lịch của bạn:**\n{lines}\n\nMuốn hủy? Bấm nút \"Hủy\" ở tin nhắn chính.",
+
+  "log.registerSuccess": "✅ Đăng ký thành công — **{room}** — {start}→{end} — {content}",
+  "log.selfCancel": "🗑️ Bạn đã hủy lịch — **{room}** — {start}→{end}",
+  "log.liveStarted": "🔴 Đã bắt đầu live — **{room}** — {start}→{end}",
+  "log.liveEndedManual": "🏁 Bạn đã kết thúc live tại **{room}**.\nKết quả: {result}",
+  "log.liveEndedAuto": "⏰ Hết giờ live tại **{room}**, bạn đã được tự động đưa ra khỏi voice channel.\nKết quả: {result}",
+  "log.adminCancelled": "❌ BTC đã hủy lịch của bạn — **{room}** — {time}. Liên hệ BTC nếu cần hỗ trợ.",
+  "dm.adminCancelled": "Lịch host của bạn tại **{room}** lúc {time} đã bị BTC hủy. Liên hệ BTC nếu cần hỗ trợ.",
+
+  "validity.valid": "✅ Hợp lệ ({duration} phút, đỉnh {viewers} viewer)",
+  "validity.invalid": "⚠️ Không hợp lệ ({duration} phút, đỉnh {viewers} viewer — chưa đạt mức tối thiểu)",
+
+  "errors.generic": "❌ Có lỗi hệ thống, vui lòng thử lại sau.",
+  "errors.SLOT_TAKEN": "Khung giờ này vừa có người khác đặt mất rồi, bạn chọn giờ khác nhé.",
+  "errors.MAX_PER_DAY": "Mỗi người chỉ được đặt tối đa {max} slot/ngày (bạn đã có {count} slot trong ngày này).",
+  "errors.MAX_ACTIVE": "Bạn đã đạt giới hạn {max} slot đang chờ/live (hiện có {count}).",
+  "errors.NOT_FOUND_OWN": "Không tìm thấy lịch đặt này của bạn.",
+  "errors.CANNOT_CANCEL": "Lịch này không thể hủy nữa.",
+  "errors.NOT_FOUND_ADMIN": "Không tìm thấy booking này.",
+  "errors.CANNOT_CANCEL_ADMIN": "Booking này không thể hủy nữa.",
+
+  "language.saved": "✅ Đã đổi ngôn ngữ sang Tiếng Việt."
+}

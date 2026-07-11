@@ -1,0 +1,48 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Booking {
+  id           String   @id @default(cuid())
+  userId       String
+  username     String
+  roomId       String
+  startTime    DateTime
+  endTime      DateTime
+  status       String   @default("PENDING")
+  roleGranted       Boolean  @default(false)
+  livestreamContent String   @default("") @map("livestream_content")
+  actualStartAt     DateTime?
+  actualEndAt       DateTime?
+  peakViewers       Int      @default(0)
+  isValidLive       Boolean?
+  endReason         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@index([roomId, startTime])
+  @@index([status])
+}
+
+model Setting {
+  id        String   @id @default("global")
+  data      String
+  updatedAt DateTime @updatedAt
+}
+
+model UserThread {
+  userId    String   @id
+  threadId  String
+  createdAt DateTime @default(now())
+}
+
+model UserPreference {
+  userId   String @id
+  language String @default("vi")
+}
