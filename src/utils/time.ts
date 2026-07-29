@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import 'dayjs/locale/vi';
 import { TIMEZONE } from '../config';
 import { getSettings } from '../services/settingsService';
@@ -8,6 +9,7 @@ import { Lang } from '../i18n';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
 dayjs.locale('vi');
 
 // Admin Portal giữ nguyên tiếng Việt (không đa ngôn ngữ) -> dùng thẳng DAY_LABELS
@@ -23,50 +25,69 @@ export function now() {
   return dayjs().tz(TIMEZONE);
 }
 
-/** Có đang trong khung giờ mở đăng ký không (VD: CN 00:00 -> Thứ 3 00:00) */
+const ADMIN_DATETIME_FORMAT = 'YYYY-MM-DD HH:mm';
+
+/** Parse datetime do admin nhập theo giờ Việt Nam và trả về ISO-8601 để lưu DB. */
+export function parseAdminDateTime(value: string): string | null {
+  const trimmed = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(trimmed)) return null;
+
+  const parsed = dayjs.tz(trimmed, ADMIN_DATETIME_FORMAT, TIMEZONE);
+  if (!parsed.isValid() || parsed.format(ADMIN_DATETIME_FORMAT) !== trimmed) return null;
+  return parsed.toISOString();
+}
+
+/** Format mốc ISO thành định dạng dùng trong input Admin Portal. */
+export function formatAdminDateTime(value: string): string {
+  return dayjs(value).tz(TIMEZONE).format(ADMIN_DATETIME_FORMAT);
+}
+
+/** Có đang nằm trong khoảng datetime cho phép đăng ký không. */
 export async function isRegistrationOpen(): Promise<boolean> {
   const settings = await getSettings();
   const n = now();
-  const day = n.day(); // 0=CN ... 6=Th7
-  const { openDay, closeDay } = settings.registrationWindow;
-
-  if (openDay <= closeDay) {
-    return day >= openDay && day < closeDay;
-  }
-  // Trường hợp cửa sổ vắt qua tuần (VD mở Thứ 6, đóng Thứ 2)
-  return day >= openDay || day < closeDay;
+  const registrationStart = dayjs(settings.registrationWindow.start);
+  const registrationEnd = dayjs(settings.registrationWindow.end);
+  return !n.isBefore(registrationStart) && !n.isAfter(registrationEnd);
 }
 
-/** Danh sách các ngày (YYYY-MM-DD) được phép chọn, tính từ hôm nay */
+/** Danh sách ngày nằm trong khoảng slot đầu tiên -> slot cuối cùng và chưa ở quá khứ. */
 export async function getBookableDays(): Promise<string[]> {
   const settings = await getSettings();
+  const configuredStart = dayjs(settings.startTime).tz(TIMEZONE).startOf('day');
+  const configuredEnd = dayjs(settings.endTime).tz(TIMEZONE).startOf('day');
+  let cursor = configuredStart.isAfter(now().startOf('day')) ? configuredStart : now().startOf('day');
   const days: string[] = [];
-  for (let i = 0; i < settings.bookableDaysAhead; i++) {
-    days.push(now().add(i, 'day').format('YYYY-MM-DD'));
+
+  while (!cursor.isAfter(configuredEnd)) {
+    days.push(cursor.format('YYYY-MM-DD'));
+    cursor = cursor.add(1, 'day');
   }
   return days;
 }
 
-/** Với 1 ngày cụ thể, trả về các slot giờ còn hợp lệ (chưa qua, và cách hiện tại >= minHoursBeforeBooking) */
+/** Với 1 ngày cụ thể, trả về các slot chưa qua và nằm trong hai biên datetime đã cấu hình. */
 export async function getValidTimeSlotsForDay(
   dateStr: string
 ): Promise<{ slot: string; start: Date; end: Date }[]> {
   const settings = await getSettings();
   const result: { slot: string; start: Date; end: Date }[] = [];
-  const minAllowed = now().add(settings.minHoursBeforeBooking, 'hour');
+  const current = now();
+  const allowedStart = dayjs(settings.startTime);
+  const allowedEnd = dayjs(settings.endTime);
 
   for (const slot of settings.timeSlots) {
     const start = dayjs.tz(`${dateStr} ${slot}`, 'YYYY-MM-DD HH:mm', TIMEZONE);
     const end = start.add(settings.slotDurationMinutes, 'minute');
 
-    if (start.isAfter(minAllowed)) {
+    if (start.isAfter(current) && !start.isBefore(allowedStart) && !start.isAfter(allowedEnd)) {
       result.push({ slot, start: start.toDate(), end: end.toDate() });
     }
   }
   return result;
 }
 
-export function formatDateTimeVN(d: Date): string {
+export function formatDateTimeVN(d: Date | string): string {
   return dayjs(d).tz(TIMEZONE).format('DD/MM/YYYY HH:mm');
 }
 

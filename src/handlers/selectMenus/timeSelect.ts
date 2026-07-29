@@ -1,6 +1,5 @@
 import { StringSelectMenuInteraction, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from 'discord.js';
 import { getValidTimeSlotsForDay } from '../../utils/time';
-import { getSettings } from '../../services/settingsService';
 import { getUserLanguage } from '../../services/userPreferenceService';
 import { t } from '../../i18n';
 
@@ -13,9 +12,8 @@ export async function handleTimeSelect(interaction: StringSelectMenuInteraction)
   const candidate = (await getValidTimeSlotsForDay(dateStr)).find((c) => c.slot === slot);
   if (!candidate) {
     console.log(`[Register] User ${interaction.user.tag} (${interaction.user.id}) invalid time slot candidate: ${slot} (date: ${dateStr}, room: ${roomId}).`);
-    const settings = await getSettings();
     await interaction.update({
-      content: t('register.slotExpired', lang, { minHours: settings.minHoursBeforeBooking }),
+      content: t('register.slotExpired', lang),
       components: [],
     });
     return;
@@ -31,7 +29,7 @@ export async function handleTimeSelect(interaction: StringSelectMenuInteraction)
     .setPlaceholder(t('register.contentPlaceholder', lang))
     .setStyle(TextInputStyle.Short)
     .setMaxLength(50)
-    .setRequired(true);
+    .setRequired(false);
 
   const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(contentInput);
   modal.addComponents(actionRow);

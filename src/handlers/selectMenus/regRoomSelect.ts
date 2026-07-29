@@ -17,7 +17,7 @@ export async function handleRegRoomSelect(interaction: StringSelectMenuInteracti
   if (candidates.length === 0) {
     console.log(`[Register] User ${interaction.user.tag} (${interaction.user.id}) no candidate slots (too soon) on date: ${dateStr} for room: ${roomId}.`);
     await interaction.update({
-      content: t('register.tooSoon', lang, { minHours: settings.minHoursBeforeBooking }),
+      content: t('register.tooSoon', lang),
       components: [],
     });
     return;

@@ -26,19 +26,9 @@ export const TIME_SLOTS = [
 
 export const SLOT_DURATION_MINUTES = 60;
 
-// Cửa sổ mở đăng ký trong tuần: 0 = Chủ Nhật ... 6 = Thứ Bảy
-export const REGISTRATION_WINDOW = {
-  openDay: 0,   // Chủ Nhật
-  openHour: 0,
-  closeDay: 6,  // Thứ 7
-  closeHour: 0,
-};
-
-// Số ngày tới được phép đăng ký (từ hôm nay), để giới hạn dropdown chọn Ngày
-export const BOOKABLE_DAYS_AHEAD = 7;
-
-// Không cho đặt slot cách giờ hiện tại dưới X giờ
-export const MIN_HOURS_BEFORE_BOOKING = 0;
+// Số ngày dùng để tạo khoảng thời gian mặc định khi DB chưa có Setting.
+// Đây chỉ là giá trị seed nội bộ; admin sẽ quản lý các mốc datetime trực tiếp trên Admin Portal.
+export const DEFAULT_SCHEDULE_DURATION_DAYS = 7;
 
 // Mỗi user tối đa bao nhiêu slot đang active (đang chờ/đã live) cùng lúc
 export const MAX_ACTIVE_SLOTS_PER_USER = 5;

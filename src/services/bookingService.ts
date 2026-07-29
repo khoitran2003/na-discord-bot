@@ -2,9 +2,12 @@ import { prisma } from '../prisma';
 import { BookingStatus } from '../types';
 import { getSettings } from './settingsService';
 import dayjs from 'dayjs';
+import { Prisma } from '@prisma/client';
 
 export type BookingErrorCode =
   | 'SLOT_TAKEN'
+  | 'REGISTRATION_CLOSED'
+  | 'SLOT_OUTSIDE_SCHEDULE'
   | 'MAX_PER_DAY'
   | 'MAX_ACTIVE'
   | 'NOT_FOUND_OWN'
@@ -50,6 +53,18 @@ export async function countUserBookingsOnDay(userId: string, dateStr: string): P
 export async function assertCanBook(userId: string, roomId: string, startTime: Date, endTime: Date) {
   const settings = await getSettings();
   const dateStr = dayjs(startTime).format('YYYY-MM-DD');
+  const current = new Date();
+
+  if (current < new Date(settings.registrationWindow.start) || current > new Date(settings.registrationWindow.end)) {
+    throw new BookingError('REGISTRATION_CLOSED');
+  }
+  if (
+    startTime <= current ||
+    startTime < new Date(settings.startTime) ||
+    startTime > new Date(settings.endTime)
+  ) {
+    throw new BookingError('SLOT_OUTSIDE_SCHEDULE');
+  }
 
   const [activeCount, sameDayCount, taken] = await Promise.all([
     prisma.booking.count({ where: { userId, status: { in: ACTIVE_STATUSES } } }),
@@ -121,9 +136,10 @@ export async function getUserActiveBookings(userId: string) {
   });
 }
 
-export async function getUpcomingActiveBookings() {
+export async function getUpcomingActiveBookings(reference = new Date()) {
   return prisma.booking.findMany({
-    where: { status: { in: ACTIVE_STATUSES } },
+    // Giữ booking đang LIVE và booking tương lai; loại booking active đã hết giờ nhưng cron chưa kịp xử lý.
+    where: { status: { in: ACTIVE_STATUSES }, endTime: { gt: reference } },
     orderBy: { startTime: 'asc' },
   });
 }
@@ -222,13 +238,22 @@ export async function finalizeLiveEnd(
   return count > 0 ? result : null;
 }
 
-/** Danh sách booking cho Admin Portal: lọc theo status (hoặc tất cả) + phân trang */
-export async function getBookingsForAdmin(params: {
-  status?: BookingStatus | 'ALL';
+export type AdminBookingStatusFilter = BookingStatus | 'ALL';
+
+export interface AdminBookingFilters {
+  status?: AdminBookingStatusFilter;
+}
+
+function buildAdminBookingWhere(filters: AdminBookingFilters): Prisma.BookingWhereInput {
+  return filters.status && filters.status !== 'ALL' ? { status: filters.status } : {};
+}
+
+/** Danh sách booking cho Admin Portal: cùng filter với export, có phân trang cho Discord UI. */
+export async function getBookingsForAdmin(params: AdminBookingFilters & {
   page: number;
   pageSize: number;
 }) {
-  const where = params.status && params.status !== 'ALL' ? { status: params.status } : {};
+  const where = buildAdminBookingWhere(params);
 
   const [items, total] = await Promise.all([
     prisma.booking.findMany({
@@ -241,4 +266,12 @@ export async function getBookingsForAdmin(params: {
   ]);
 
   return { items, total, totalPages: Math.max(Math.ceil(total / params.pageSize), 1) };
+}
+
+/** Export luôn lấy toàn bộ bản ghi khớp filter, không áp dụng pagination của Discord UI. */
+export async function getBookingsForAdminExport(filters: AdminBookingFilters) {
+  return prisma.booking.findMany({
+    where: buildAdminBookingWhere(filters),
+    orderBy: [{ startTime: 'desc' }, { id: 'asc' }],
+  });
 }

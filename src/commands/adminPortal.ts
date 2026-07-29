@@ -10,7 +10,7 @@ import {
 } from 'discord.js';
 import { getSettings } from '../services/settingsService';
 import { env } from '../config';
-import { DAY_LABELS, formatTimeSlotsSummary } from '../utils/time';
+import { formatDateTimeVN, formatTimeSlotsSummary } from '../utils/time';
 
 export const data = new SlashCommandBuilder()
   .setName('admin-portal')
@@ -46,10 +46,10 @@ export async function buildAdminPortalEmbed(): Promise<EmbedBuilder> {
       `📍 Số phòng: **${settings.rooms.length}**\n` +
       `🕐 Khung giờ: **${formatTimeSlotsSummary(settings.timeSlots)}**\n` +
       `⏱️ Thời lượng slot: **${settings.slotDurationMinutes} phút**\n` +
-      `📅 Đặt trước tối đa: **${settings.bookableDaysAhead} ngày**\n` +
-      `⏳ Đặt trước tối thiểu: **${settings.minHoursBeforeBooking} giờ**\n` +
       `📆 Tối đa slot/ngày/user: **${settings.maxSlotsPerDayPerUser}**\n` +
-      `🗓️ Cửa sổ đăng ký: **${DAY_LABELS[settings.registrationWindow.openDay]} → ${DAY_LABELS[settings.registrationWindow.closeDay]}**\n\n` +
+      `🗓️ Cửa sổ đăng ký: **${formatDateTimeVN(settings.registrationWindow.start)} → ${formatDateTimeVN(settings.registrationWindow.end)}**\n` +
+      `▶️ Giờ bắt đầu: **${formatDateTimeVN(settings.startTime)}**\n` +
+      `⏹️ Giờ kết thúc: **${formatDateTimeVN(settings.endTime)}**\n\n` +
       `Dùng các nút bên dưới để chỉnh sửa. Thay đổi có hiệu lực ngay, không cần restart bot.`
     );
 }

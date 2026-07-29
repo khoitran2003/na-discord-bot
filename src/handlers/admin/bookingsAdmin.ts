@@ -1,5 +1,6 @@
 import {
   ActionRowBuilder,
+  AttachmentBuilder,
   ButtonBuilder,
   ButtonInteraction,
   ButtonStyle,
@@ -8,7 +9,12 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuInteraction,
 } from 'discord.js';
-import { adminCancelBooking, BookingError, getBookingsForAdmin } from '../../services/bookingService';
+import {
+  AdminBookingStatusFilter,
+  adminCancelBooking,
+  BookingError,
+  getBookingsForAdmin,
+} from '../../services/bookingService';
 import { getSettings } from '../../services/settingsService';
 import { logBookingEvent, logAdminAudit } from '../../services/userThreadService';
 import { refreshPublicTimeline } from '../../services/publicTimelineService';
@@ -18,10 +24,11 @@ import { t } from '../../i18n';
 import { formatDateTimeVN } from '../../utils/time';
 import { requireManageGuild } from '../../utils/permissions';
 import { BookingStatus } from '../../types';
+import { generateBookingsWorkbook } from '../../services/bookingExportService';
 
 const PAGE_SIZE = 10;
 
-type StatusFilter = BookingStatus | 'ALL';
+type StatusFilter = AdminBookingStatusFilter;
 
 const ACTIVE_STATUSES: BookingStatus[] = ['PENDING', 'LIVE'];
 
@@ -89,7 +96,13 @@ async function buildBookingsView(statusFilter: StatusFilter, page: number) {
     .setStyle(ButtonStyle.Secondary)
     .setDisabled(safePage + 1 >= totalPages);
 
-  const navRow = new ActionRowBuilder<ButtonBuilder>().addComponents(prevButton, nextButton);
+  const exportButton = new ButtonBuilder()
+    .setCustomId(`admin_export_bookings:${statusFilter}`)
+    .setLabel('Export Excel')
+    .setEmoji('📊')
+    .setStyle(ButtonStyle.Success);
+
+  const navRow = new ActionRowBuilder<ButtonBuilder>().addComponents(prevButton, nextButton, exportButton);
 
   const filterMenu = new StringSelectMenuBuilder()
     .setCustomId('admin_view_bookings_filter')
@@ -146,6 +159,27 @@ export async function handleViewBookingsFilterSelect(interaction: StringSelectMe
   const statusFilter = parseStatusFilter(interaction.values[0]);
   const { embed, components } = await buildBookingsView(statusFilter, 0);
   await interaction.update({ embeds: [embed], components });
+}
+
+export async function handleExportBookingsButton(interaction: ButtonInteraction) {
+  if (!(await requireManageGuild(interaction))) return;
+
+  const [, statusRaw] = interaction.customId.split(':');
+  const statusFilter = parseStatusFilter(statusRaw);
+  await interaction.deferReply({ ephemeral: true });
+
+  try {
+    const result = await generateBookingsWorkbook(statusFilter);
+    const attachment = new AttachmentBuilder(result.buffer, { name: result.fileName });
+
+    await interaction.editReply({
+      content: `✅ Đã xuất **${result.count}** booking (${statusFilter === 'ALL' ? 'tất cả trạng thái' : STATUS_LABEL[statusFilter]}).`,
+      files: [attachment],
+    });
+  } catch (error) {
+    console.error('[AdminExportBookings] Lỗi tạo file Excel:', error);
+    await interaction.editReply({ content: '❌ Không thể tạo file Excel. Vui lòng thử lại sau.' });
+  }
 }
 
 export async function handleCancelBookingSelect(interaction: StringSelectMenuInteraction) {

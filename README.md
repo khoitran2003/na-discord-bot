@@ -211,7 +211,7 @@ Nếu cấu hình đúng, terminal sẽ báo:
 1. **Luồng Đăng ký của Member**:
    - Bấm nút **Đăng ký / Đổi lịch** -> Chọn **Ngày** -> Chọn **Phòng** -> Chọn **Khung giờ** -> Nhập **Nội dung Live** (Modal).
    - Hệ thống tự động re-validate tránh trùng slot (Race condition).
-   - Đăng ký thành công -> Bot gửi log xác nhận vào **Private Thread** riêng của User và tự động cập nhật **Bảng Timeline công khai**.
+   - Đăng ký thành công -> Bot gửi log xác nhận vào **Private Thread** riêng của User và tự động cập nhật **Bảng Timeline công khai**; lịch dài được chia thành nhiều Embed an toàn, không cắt dữ liệu.
 
 2. **Quản lý Quyền Tự động (Cron Job)**:
    - **Bắt đầu slot**: Bot tự động cấp quyền `Move Members` và `Mute Members` cho Host trên kênh Voice tương ứng.
@@ -220,6 +220,6 @@ Nếu cấu hình đúng, terminal sẽ báo:
 3. **Bảng điều khiển Admin Portal**:
    - Quản lý danh sách phòng live & ID Voice Channel.
    - Thêm/bớt khung giờ live trong ngày.
-   - Điều chỉnh tham số rule (Hạn mức slot/ngày, hạn mức slot active, thời gian mở cửa sổ đăng ký,...).
-   - Xem danh sách Booking & Hủy slot của bất kỳ ai.
+   - Điều chỉnh tham số rule (hạn mức slot/ngày, thời lượng slot, cửa sổ đăng ký và mốc slot đầu/cuối bằng datetime,...).
+   - Xem, lọc, xuất Excel danh sách Booking & hủy slot của bất kỳ ai.
    - Gửi thông báo chung (Broadcast) tới `NOTI_CHANNEL_ID`.

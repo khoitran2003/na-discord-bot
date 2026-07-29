@@ -23,7 +23,7 @@ export async function handleBookingModal(interaction: ModalSubmitInteraction) {
   if (!candidate) {
     console.log(`[Register] User ${interaction.user.tag} (${interaction.user.id}) modal slot candidate invalid: ${slot} (date: ${dateStr}, room: ${roomId}).`);
     await interaction.update({
-      content: t('register.slotExpired', lang, { minHours: settings.minHoursBeforeBooking }),
+      content: t('register.slotExpired', lang),
       components: [],
     });
     return;
@@ -44,9 +44,11 @@ export async function handleBookingModal(interaction: ModalSubmitInteraction) {
     const roomLabel = room?.label ?? roomId;
     const start = formatDateTimeVN(booking.startTime);
     const end = formatDateTimeVN(booking.endTime);
+    const contentLine = booking.livestreamContent ? t('register.contentLine', lang, { content: booking.livestreamContent }) : '';
+    const contentSuffix = booking.livestreamContent ? ` — ${booking.livestreamContent}` : '';
 
     await interaction.update({
-      content: t('register.success', lang, { room: roomLabel, start, end, content: booking.livestreamContent }),
+      content: t('register.success', lang, { room: roomLabel, start, end, contentLine }),
       components: [],
     });
 
@@ -54,12 +56,12 @@ export async function handleBookingModal(interaction: ModalSubmitInteraction) {
       interaction.client,
       booking.userId,
       booking.username,
-      t('log.registerSuccess', lang, { room: roomLabel, start, end, content: booking.livestreamContent })
+      t('log.registerSuccess', lang, { room: roomLabel, start, end, contentSuffix })
     );
 
     await logAdminAudit(
       interaction.client,
-      `📥 <@${booking.userId}> vừa đăng ký lịch — **${roomLabel}** — ${start}→${end} — ${booking.livestreamContent}`
+      `📥 <@${booking.userId}> vừa đăng ký lịch — **${roomLabel}** — ${start}→${end}${contentSuffix}`
     );
 
     await refreshPublicTimeline(interaction.client).catch((err) =>

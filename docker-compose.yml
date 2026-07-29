@@ -1,11 +1,33 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: livestream-booking-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: livestream_bot
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d livestream_bot"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
   discord-bot:
     build: .
     container_name: livestream-booking-bot
     restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
     env_file:
       - .env
     environment:
-      - DATABASE_URL=file:/app/data/dev.db
-    volumes:
-      - ./data:/app/data
+      - DATABASE_URL=postgresql://postgres:postgrespassword@postgres:5432/livestream_bot?schema=livestream
+
+volumes:
+  postgres_data:

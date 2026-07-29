@@ -1,29 +1,33 @@
-import { ActionRowBuilder, ButtonInteraction, StringSelectMenuBuilder } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, StringSelectMenuBuilder } from 'discord.js';
 import dayjs from 'dayjs';
 import { getSettings } from '../../services/settingsService';
-import { getBookableDays, getDayLabel, getValidTimeSlotsForDay, isRegistrationOpen } from '../../utils/time';
+import { formatDateTimeVN, getBookableDays, getValidTimeSlotsForDay, isRegistrationOpen } from '../../utils/time';
 import { getUserLanguage } from '../../services/userPreferenceService';
 import { t } from '../../i18n';
 
 export async function handleRegisterButton(interaction: ButtonInteraction) {
+  const isPagination = interaction.customId.startsWith('btn_register_dates:');
+  const requestedPage = isPagination ? Number(interaction.customId.split(':')[1]) : 0;
+  const page = Number.isInteger(requestedPage) && requestedPage >= 0 ? requestedPage : 0;
   console.log(`[Register] User ${interaction.user.tag} (${interaction.user.id}) clicked register button.`);
   const [settings, lang] = await Promise.all([getSettings(), getUserLanguage(interaction.user.id)]);
 
   if (!(await isRegistrationOpen())) {
     console.log(`[Register] User ${interaction.user.tag} (${interaction.user.id}) registration rejected: registration is closed.`);
-    await interaction.reply({
-      content: t('register.closed', lang, { openDay: getDayLabel(settings.registrationWindow.openDay, lang) }),
-      ephemeral: true,
+    const content = t('register.closed', lang, {
+      start: formatDateTimeVN(settings.registrationWindow.start),
+      end: formatDateTimeVN(settings.registrationWindow.end),
     });
+    if (isPagination) await interaction.update({ content, components: [] });
+    else await interaction.reply({ content, ephemeral: true });
     return;
   }
 
   if (settings.rooms.length === 0) {
     console.log(`[Register] User ${interaction.user.tag} (${interaction.user.id}) registration rejected: no rooms configured.`);
-    await interaction.reply({
-      content: t('register.noRooms', lang),
-      ephemeral: true,
-    });
+    const content = t('register.noRooms', lang);
+    if (isPagination) await interaction.update({ content, components: [] });
+    else await interaction.reply({ content, ephemeral: true });
     return;
   }
 
@@ -36,20 +40,38 @@ export async function handleRegisterButton(interaction: ButtonInteraction) {
 
   if (days.length === 0) {
     console.log(`[Register] User ${interaction.user.tag} (${interaction.user.id}) registration rejected: no valid days.`);
-    await interaction.reply({ content: t('register.noValidDays', lang), ephemeral: true });
+    const content = t('register.noValidDays', lang);
+    if (isPagination) await interaction.update({ content, components: [] });
+    else await interaction.reply({ content, ephemeral: true });
     return;
   }
 
+  const pageSize = 25;
+  const totalPages = Math.ceil(days.length / pageSize);
+  const safePage = Math.min(page, totalPages - 1);
+  const chunk = days.slice(safePage * pageSize, (safePage + 1) * pageSize);
   const menu = new StringSelectMenuBuilder()
-    .setCustomId('reg_select_date')
+    .setCustomId(`reg_select_date:${safePage}`)
     .setPlaceholder(t('register.selectDatePlaceholder', lang))
-    .addOptions(days.map((d) => ({ label: dayjs(d).locale(lang).format('dddd, DD/MM/YYYY'), value: d })));
+    .addOptions(chunk.map((d) => ({ label: dayjs(d).locale(lang).format('dddd, DD/MM/YYYY'), value: d })));
+  const menuRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu);
+  const components: (ActionRowBuilder<StringSelectMenuBuilder> | ActionRowBuilder<ButtonBuilder>)[] = [menuRow];
 
-  const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu);
+  if (totalPages > 1) {
+    const previous = new ButtonBuilder()
+      .setCustomId(`btn_register_dates:${Math.max(0, safePage - 1)}`)
+      .setLabel(t('register.previousDates', lang))
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(safePage === 0);
+    const next = new ButtonBuilder()
+      .setCustomId(`btn_register_dates:${Math.min(totalPages - 1, safePage + 1)}`)
+      .setLabel(t('register.nextDates', lang))
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(safePage === totalPages - 1);
+    components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(previous, next));
+  }
 
-  await interaction.reply({
-    content: t('register.step1', lang),
-    components: [row],
-    ephemeral: true,
-  });
+  const content = t('register.step1', lang);
+  if (isPagination) await interaction.update({ content, components });
+  else await interaction.reply({ content, components, ephemeral: true });
 }

@@ -8,7 +8,7 @@ import {
   SlashCommandBuilder,
   TextChannel,
 } from 'discord.js';
-import { getDayLabel, isRegistrationOpen, formatTimeSlotsSummary } from '../utils/time';
+import { isRegistrationOpen, formatDateTimeVN, formatTimeSlotsSummary } from '../utils/time';
 import { getSettings } from '../services/settingsService';
 
 export const data = new SlashCommandBuilder()
@@ -34,16 +34,19 @@ export async function buildSetupEmbed(): Promise<EmbedBuilder> {
 
   const roomsLine = settings.rooms.length > 0 ? settings.rooms.map((r) => r.label).join(', ') : '(chưa có phòng nào / none yet)';
   const timeSlotsLine = formatTimeSlotsSummary(settings.timeSlots);
-  const { openDay, closeDay } = settings.registrationWindow;
+  const registrationStart = formatDateTimeVN(settings.registrationWindow.start);
+  const registrationEnd = formatDateTimeVN(settings.registrationWindow.end);
+  const firstStart = formatDateTimeVN(settings.startTime);
+  const lastStart = formatDateTimeVN(settings.endTime);
 
   const viBlock =
     `**🇻🇳 Trạng thái**\n${open ? '🟢 Đang mở đăng ký' : '🔴 Sự kiện đang tạm dừng — chờ BTC mở lại.'}\n\n` +
     `**Phòng live**\n${roomsLine}\n\n` +
     `**Khung giờ live** (mỗi slot ${settings.slotDurationMinutes} phút)\n${timeSlotsLine}\n\n` +
     `**Quy định đăng ký**\n` +
-    `🗓️ Khung giờ đăng ký: **${getDayLabel(openDay, 'vi')} → ${getDayLabel(closeDay, 'vi')}** hàng tuần\n` +
-    `📅 Đặt trước tối đa: **${settings.bookableDaysAhead} ngày**\n` +
-    `⏳ Đặt trước tối thiểu: **${settings.minHoursBeforeBooking} giờ**\n` +
+    `🗓️ Cửa sổ đăng ký: **${registrationStart} → ${registrationEnd}**\n` +
+    `▶️ Slot đầu tiên: **${firstStart}**\n` +
+    `⏹️ Slot cuối cùng: **${lastStart}**\n` +
     `📆 Tối đa **${settings.maxSlotsPerDayPerUser}** slot/ngày mỗi người\n\n` +
     `Bấm **Đăng ký / Đổi lịch** bên dưới để chọn phòng, ngày và giờ live.`;
 
@@ -52,9 +55,9 @@ export async function buildSetupEmbed(): Promise<EmbedBuilder> {
     `**Live rooms**\n${roomsLine}\n\n` +
     `**Live time slots** (each slot is ${settings.slotDurationMinutes} min)\n${timeSlotsLine}\n\n` +
     `**Registration rules**\n` +
-    `🗓️ Registration window: **${getDayLabel(openDay, 'en')} → ${getDayLabel(closeDay, 'en')}**, weekly\n` +
-    `📅 Book up to **${settings.bookableDaysAhead} day(s)** ahead\n` +
-    `⏳ At least **${settings.minHoursBeforeBooking} hour(s)** in advance\n` +
+    `🗓️ Registration window: **${registrationStart} → ${registrationEnd}**\n` +
+    `▶️ First slot: **${firstStart}**\n` +
+    `⏹️ Last slot: **${lastStart}**\n` +
     `📆 Max **${settings.maxSlotsPerDayPerUser}** slot(s)/day per person\n\n` +
     `Tap **Register / Reschedule** below to pick a room, date and time.`;
 

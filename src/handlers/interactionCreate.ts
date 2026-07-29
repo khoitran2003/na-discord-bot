@@ -29,15 +29,15 @@ import {
   handleManageRulesButton,
   handleRulesEditNumbersButton,
   handleRulesNumbersModal,
-  handleRulesEditWindowButton,
-  handleOpenDaySelect,
-  handleCloseDaySelect,
+  handleRulesEditScheduleButton,
+  handleRulesScheduleModal,
   handleRulesEditLiveValidityButton,
   handleRulesLiveValidityModal,
 } from './admin/rulesAdmin';
 import {
   handleViewBookingsButton,
   handleViewBookingsFilterSelect,
+  handleExportBookingsButton,
   handleCancelBookingSelect,
 } from './admin/bookingsAdmin';
 import { handleBroadcastButton, handleBroadcastModal } from './admin/broadcastAdmin';
@@ -60,6 +60,8 @@ export async function handleInteraction(interaction: Interaction) {
       const [action] = interaction.customId.split(':');
       switch (action) {
         case 'btn_register':
+          return void (await handleRegisterButton(interaction));
+        case 'btn_register_dates':
           return void (await handleRegisterButton(interaction));
         case 'btn_cancel':
           return void (await handleCancelButton(interaction));
@@ -89,12 +91,14 @@ export async function handleInteraction(interaction: Interaction) {
           return void (await handleManageRulesButton(interaction));
         case 'admin_rules_edit_numbers':
           return void (await handleRulesEditNumbersButton(interaction));
-        case 'admin_rules_edit_window':
-          return void (await handleRulesEditWindowButton(interaction));
+        case 'admin_rules_edit_schedule':
+          return void (await handleRulesEditScheduleButton(interaction));
         case 'admin_rules_edit_live_validity':
           return void (await handleRulesEditLiveValidityButton(interaction));
         case 'admin_view_bookings':
           return void (await handleViewBookingsButton(interaction));
+        case 'admin_export_bookings':
+          return void (await handleExportBookingsButton(interaction));
         case 'admin_broadcast':
           return void (await handleBroadcastButton(interaction));
       }
@@ -114,10 +118,6 @@ export async function handleInteraction(interaction: Interaction) {
           return void (await handleCancelSelect(interaction));
         case 'admin_room_select':
           return void (await handleRoomSelectAdmin(interaction));
-        case 'admin_select_open_day':
-          return void (await handleOpenDaySelect(interaction));
-        case 'admin_select_close_day':
-          return void (await handleCloseDaySelect(interaction));
         case 'admin_view_bookings_filter':
           return void (await handleViewBookingsFilterSelect(interaction));
         case 'admin_cancel_booking':
@@ -139,6 +139,8 @@ export async function handleInteraction(interaction: Interaction) {
           return void (await handleTimeslotsModal(interaction));
         case 'admin_modal_rules_numbers':
           return void (await handleRulesNumbersModal(interaction));
+        case 'admin_modal_rules_schedule':
+          return void (await handleRulesScheduleModal(interaction));
         case 'admin_modal_rules_live_validity':
           return void (await handleRulesLiveValidityModal(interaction));
         case 'admin_broadcast_modal':
