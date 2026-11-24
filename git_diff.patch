@@ -1,0 +1,382 @@
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index 50e4310..9903456 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -8,22 +8,23 @@ generator client {
+ }
+ 
+ model Booking {
+-  id           String   @id @default(cuid())
+-  userId       String
+-  username     String
+-  roomId       String
+-  startTime    DateTime
+-  endTime      DateTime
+-  status       String   @default("PENDING")
+-  roleGranted       Boolean  @default(false)
+-  livestreamContent String   @default("") @map("livestream_content")
++  id                String    @id @default(cuid())
++  userId            String
++  username          String
++  ingameRoleId      BigInt?
++  roomId            String
++  startTime         DateTime
++  endTime           DateTime
++  status            String    @default("PENDING")
++  roleGranted       Boolean   @default(false)
++  livestreamContent String    @default("") @map("livestream_content")
+   actualStartAt     DateTime?
+   actualEndAt       DateTime?
+-  peakViewers       Int      @default(0)
++  peakViewers       Int       @default(0)
+   isValidLive       Boolean?
+   endReason         String?
+-  createdAt         DateTime @default(now())
+-  updatedAt         DateTime @updatedAt
++  createdAt         DateTime  @default(now())
++  updatedAt         DateTime  @updatedAt
+ 
+   @@index([userId])
+   @@index([roomId, startTime])
+diff --git a/src/handlers/admin/bookingsAdmin.ts b/src/handlers/admin/bookingsAdmin.ts
+index cb55af8..78c6d9e 100644
+--- a/src/handlers/admin/bookingsAdmin.ts
++++ b/src/handlers/admin/bookingsAdmin.ts
+@@ -72,7 +72,8 @@ async function buildBookingsView(statusFilter: StatusFilter, page: number) {
+         const status = b.status as BookingStatus;
+         const emoji = STATUS_EMOJI[status] ?? '⚪';
+         const label = STATUS_LABEL[status] ?? status;
+-        return `${emoji} <@${b.userId}> — **${roomLabel(b.roomId)}** — ${formatDateTimeVN(b.startTime)}→${formatDateTimeVN(b.endTime)} — ${label}`;
++        const ingameRoleId = b.ingameRoleId?.toString() ?? 'N/A';
++        return `${emoji} <@${b.userId}> — ID nhân vật: \`${ingameRoleId}\` — **${roomLabel(b.roomId)}** — ${formatDateTimeVN(b.startTime)}→${formatDateTimeVN(b.endTime)} — ${label}`;
+       })
+     : ['(không có booking nào)'];
+ 
+diff --git a/src/handlers/buttons/mySchedule.ts b/src/handlers/buttons/mySchedule.ts
+index 916825f..360456f 100644
+--- a/src/handlers/buttons/mySchedule.ts
++++ b/src/handlers/buttons/mySchedule.ts
+@@ -19,7 +19,10 @@ export async function handleMyScheduleButton(interaction: ButtonInteraction) {
+     const room = settings.rooms.find((r) => r.id === b.roomId)?.label ?? b.roomId;
+     const status = b.status === 'LIVE' ? t('schedule.statusLive', lang) : t('schedule.statusPending', lang);
+     const contentSuffix = b.livestreamContent ? ` — *${b.livestreamContent}*` : '';
+-    return `${status} — **${room}** — ${formatDateTimeVN(b.startTime)} → ${formatDateTimeVN(b.endTime)}${contentSuffix}`;
++    const ingameRoleIdSuffix = b.ingameRoleId
++      ? t('schedule.ingameRoleIdSuffix', lang, { ingameRoleId: b.ingameRoleId.toString() })
++      : '';
++    return `${status} — **${room}** — ${formatDateTimeVN(b.startTime)} → ${formatDateTimeVN(b.endTime)}${contentSuffix}${ingameRoleIdSuffix}`;
+   });
+ 
+   await interaction.reply({
+diff --git a/src/handlers/modals/bookingModal.ts b/src/handlers/modals/bookingModal.ts
+index 7f8491d..8d46c00 100644
+--- a/src/handlers/modals/bookingModal.ts
++++ b/src/handlers/modals/bookingModal.ts
+@@ -15,7 +15,8 @@ export async function handleBookingModal(interaction: ModalSubmitInteraction) {
+   const dateStr = parts[2];
+   const slot = parts.slice(3).join(':');
+   const livestreamContent = interaction.fields.getTextInputValue('livestream_content_input');
+-  console.log(`[Register] User ${interaction.user.tag} (${interaction.user.id}) submitted booking modal (room: ${roomId}, date: ${dateStr}, slot: ${slot}, content: "${livestreamContent}").`);
++  const ingameRoleId = interaction.fields.getTextInputValue('ingame_role_id_input');
++  console.log(`[Register] User ${interaction.user.tag} (${interaction.user.id}) submitted booking modal (room: ${roomId}, date: ${dateStr}, slot: ${slot}, content: "${livestreamContent}", ingame character ID: ${ingameRoleId}).`);
+   const [settings, lang] = await Promise.all([getSettings(), getUserLanguage(interaction.user.id)]);
+   const room = settings.rooms.find((r) => r.id === roomId);
+ 
+@@ -37,6 +38,7 @@ export async function handleBookingModal(interaction: ModalSubmitInteraction) {
+       startTime: candidate.start,
+       endTime: candidate.end,
+       livestreamContent,
++      ingameRoleId,
+     });
+ 
+     console.log(`[Register] User ${interaction.user.tag} (${interaction.user.id}) booking created successfully: ID ${booking.id}.`);
+@@ -46,9 +48,11 @@ export async function handleBookingModal(interaction: ModalSubmitInteraction) {
+     const end = formatDateTimeVN(booking.endTime);
+     const contentLine = booking.livestreamContent ? t('register.contentLine', lang, { content: booking.livestreamContent }) : '';
+     const contentSuffix = booking.livestreamContent ? ` — ${booking.livestreamContent}` : '';
++    const savedIngameRoleId = booking.ingameRoleId!.toString();
++    const ingameRoleIdLine = t('register.ingameRoleIdLine', lang, { ingameRoleId: savedIngameRoleId });
+ 
+     await interaction.update({
+-      content: t('register.success', lang, { room: roomLabel, start, end, contentLine }),
++      content: t('register.success', lang, { room: roomLabel, start, end, contentLine, ingameRoleIdLine }),
+       components: [],
+     });
+ 
+@@ -56,12 +60,12 @@ export async function handleBookingModal(interaction: ModalSubmitInteraction) {
+       interaction.client,
+       booking.userId,
+       booking.username,
+-      t('log.registerSuccess', lang, { room: roomLabel, start, end, contentSuffix })
++      t('log.registerSuccess', lang, { room: roomLabel, start, end, contentSuffix, ingameRoleId: savedIngameRoleId })
+     );
+ 
+     await logAdminAudit(
+       interaction.client,
+-      `📥 <@${booking.userId}> vừa đăng ký lịch — **${roomLabel}** — ${start}→${end}${contentSuffix}`
++      `📥 <@${booking.userId}> vừa đăng ký lịch — **${roomLabel}** — ${start}→${end}${contentSuffix} — ID nhân vật ingame: **${savedIngameRoleId}**`
+     );
+ 
+     await refreshPublicTimeline(interaction.client).catch((err) =>
+diff --git a/src/handlers/selectMenus/timeSelect.ts b/src/handlers/selectMenus/timeSelect.ts
+index 56dc54d..36786ab 100644
+--- a/src/handlers/selectMenus/timeSelect.ts
++++ b/src/handlers/selectMenus/timeSelect.ts
+@@ -31,8 +31,18 @@ export async function handleTimeSelect(interaction: StringSelectMenuInteraction)
+     .setMaxLength(50)
+     .setRequired(false);
+ 
+-  const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(contentInput);
+-  modal.addComponents(actionRow);
++  const ingameRoleIdInput = new TextInputBuilder()
++    .setCustomId('ingame_role_id_input')
++    .setLabel(t('register.ingameRoleIdLabel', lang))
++    .setPlaceholder(t('register.ingameRoleIdPlaceholder', lang))
++    .setStyle(TextInputStyle.Short)
++    .setMinLength(1)
++    .setMaxLength(19)
++    .setRequired(true);
++
++  const contentRow = new ActionRowBuilder<TextInputBuilder>().addComponents(contentInput);
++  const ingameRoleIdRow = new ActionRowBuilder<TextInputBuilder>().addComponents(ingameRoleIdInput);
++  modal.addComponents(contentRow, ingameRoleIdRow);
+ 
+   await interaction.showModal(modal);
+ }
+diff --git a/src/i18n/en.json b/src/i18n/en.json
+index b4a9cbc..d77e85e 100644
+--- a/src/i18n/en.json
++++ b/src/i18n/en.json
+@@ -16,39 +16,44 @@
+   "register.selectTimePlaceholderRange": "Choose a time slot ({first} → {last})",
+   "register.step3": "**Step 3/3:** Room **{room}** selected. Now choose a time slot:",
+   "register.slotExpired": "⚠️ This time slot has passed or is outside the configured schedule, please start over.",
+-  "register.modalTitle": "Livestream content",
+-  "register.contentLabel": "Content / Topic (optional, max 50 characters)",
++  "register.modalTitle": "Livestream details",
++  "register.contentLabel": "Content / Topic (max 50 characters)",
+   "register.contentPlaceholder": "E.g.: Just chatting, gaming, studying...",
+-  "register.success": "✅ **Registration successful!**\n📍 Room: **{room}**\n🗓️ Time: **{start} → {end}**{contentLine}\n\nThe bot will automatically grant your permissions at the scheduled time.",
++  "register.ingameRoleIdLabel": "Ingame Character ID (required, numbers only)",
++  "register.ingameRoleIdPlaceholder": "E.g.: 123456789",
++  "register.success": "✅ **Registration successful!**\n📍 Room: **{room}**\n🗓️ Time: **{start} → {end}**{contentLine}{ingameRoleIdLine}\n\nThe bot will automatically grant your permissions at the scheduled time.",
+   "register.contentLine": "\n📝 Content: **{content}**",
+-
++  "register.ingameRoleIdLine": "\n🎮 Ingame Character ID: **{ingameRoleId}**",
++  
+   "cancel.noActive": "You don't have any bookings to cancel.",
+   "cancel.selectPlaceholder": "Choose a booking to cancel",
+   "cancel.selectPrompt": "Choose the booking you want to cancel:",
+   "cancel.success": "✅ Booking cancelled successfully.",
+-
++  
+   "schedule.empty": "You don't have any pending/live bookings.",
+   "schedule.statusLive": "🔴 Live",
+   "schedule.statusPending": "🟡 Pending",
++  "schedule.ingameRoleIdSuffix": " — Ingame Character ID: `{ingameRoleId}`",
+   "schedule.list": "**Your schedule:**\n{lines}\n\nWant to cancel? Tap the \"Cancel\" button on the main message.",
+-
+-  "log.registerSuccess": "✅ Registration successful — **{room}** — {start}→{end}{contentSuffix}",
++  
++  "log.registerSuccess": "✅ Registration successful — **{room}** — {start}→{end}{contentSuffix} — Ingame Character ID: **{ingameRoleId}**",
+   "log.selfCancel": "🗑️ You cancelled a booking — **{room}** — {start}→{end}",
+   "log.liveStarted": "🔴 Live started — **{room}** — {start}→{end}",
+   "log.liveEndedManual": "🏁 You ended your live at **{room}**.\nResult: {result}",
+   "log.liveEndedAuto": "⏰ Time's up for your live at **{room}**, you were automatically removed from the voice channel.\nResult: {result}",
+   "log.adminCancelled": "❌ The organizers cancelled your booking — **{room}** — {time}. Contact the organizers if you need help.",
+   "dm.adminCancelled": "Your hosting slot at **{room}** at {time} has been cancelled by the organizers. Contact the organizers if you need help.",
+-
++  
+   "validity.valid": "✅ Valid ({duration} min, peak {viewers} viewer(s))",
+   "validity.invalid": "⚠️ Not valid ({duration} min, peak {viewers} viewer(s) — below the minimum requirement)",
+-
++  
+   "errors.generic": "❌ A system error occurred, please try again later.",
+   "errors.SLOT_TAKEN": "This time slot was just taken by someone else, please pick another one.",
+   "errors.REGISTRATION_CLOSED": "The registration window is closed or has not opened yet.",
+   "errors.SLOT_OUTSIDE_SCHEDULE": "This time slot has passed or is outside the configured schedule.",
+   "errors.MAX_PER_DAY": "Each person can only book up to {max} slot(s)/day (you already have {count} on this day).",
+   "errors.MAX_ACTIVE": "You've reached the limit of {max} pending/live slot(s) (currently {count}).",
++  "errors.INVALID_INGAME_ROLE_ID": "Ingame Character ID must be a positive integer of up to 19 digits and no greater than 9223372036854775807.",
+   "errors.NOT_FOUND_OWN": "Couldn't find this booking of yours.",
+   "errors.CANNOT_CANCEL": "This booking can no longer be cancelled.",
+   "errors.NOT_FOUND_ADMIN": "Couldn't find this booking.",
+diff --git a/src/i18n/vi.json b/src/i18n/vi.json
+index bfe7437..edb57ec 100644
+--- a/src/i18n/vi.json
++++ b/src/i18n/vi.json
+@@ -16,39 +16,44 @@
+   "register.selectTimePlaceholderRange": "Chọn giờ live ({first} → {last})",
+   "register.step3": "**Bước 3/3:** Đã chọn phòng **{room}**. Giờ chọn khung giờ live:",
+   "register.slotExpired": "⚠️ Khung giờ này đã qua hoặc không còn nằm trong khoảng thời gian được phép đăng ký, vui lòng thao tác lại từ đầu.",
+-  "register.modalTitle": "Nội dung livestream",
+-  "register.contentLabel": "Nội dung / Chủ đề (không bắt buộc, tối đa 50 ký tự)",
++  "register.modalTitle": "Thông tin livestream",
++  "register.contentLabel": "Nội dung / Chủ đề (tối đa 50 ký tự)",
+   "register.contentPlaceholder": "Ví dụ: Live tâm sự, chơi game, học tập...",
+-  "register.success": "✅ **Đăng ký thành công!**\n📍 Phòng: **{room}**\n🗓️ Thời gian: **{start} → {end}**{contentLine}\n\nBot sẽ tự động cấp quyền cho bạn đúng giờ live.",
++  "register.ingameRoleIdLabel": "ID nhân vật ingame (bắt buộc, chỉ nhập số)",
++  "register.ingameRoleIdPlaceholder": "Ví dụ: 123456789",
++  "register.success": "✅ **Đăng ký thành công!**\n📍 Phòng: **{room}**\n🗓️ Thời gian: **{start} → {end}**{contentLine}{ingameRoleIdLine}\n\nBot sẽ tự động cấp quyền cho bạn đúng giờ live.",
+   "register.contentLine": "\n📝 Nội dung: **{content}**",
+-
++  "register.ingameRoleIdLine": "\n🎮 ID nhân vật ingame: **{ingameRoleId}**",
++  
+   "cancel.noActive": "Bạn không có lịch nào để hủy.",
+   "cancel.selectPlaceholder": "Chọn lịch muốn hủy",
+   "cancel.selectPrompt": "Chọn lịch bạn muốn hủy:",
+   "cancel.success": "✅ Đã hủy lịch thành công.",
+-
++  
+   "schedule.empty": "Bạn chưa có lịch nào đang chờ/live.",
+   "schedule.statusLive": "🔴 Đang live",
+   "schedule.statusPending": "🟡 Đang chờ",
++  "schedule.ingameRoleIdSuffix": " — ID nhân vật ingame: `{ingameRoleId}`",
+   "schedule.list": "**Lịch của bạn:**\n{lines}\n\nMuốn hủy? Bấm nút \"Hủy\" ở tin nhắn chính.",
+-
+-  "log.registerSuccess": "✅ Đăng ký thành công — **{room}** — {start}→{end}{contentSuffix}",
++  
++  "log.registerSuccess": "✅ Đăng ký thành công — **{room}** — {start}→{end}{contentSuffix} — ID nhân vật ingame: **{ingameRoleId}**",
+   "log.selfCancel": "🗑️ Bạn đã hủy lịch — **{room}** — {start}→{end}",
+   "log.liveStarted": "🔴 Đã bắt đầu live — **{room}** — {start}→{end}",
+   "log.liveEndedManual": "🏁 Bạn đã kết thúc live tại **{room}**.\nKết quả: {result}",
+   "log.liveEndedAuto": "⏰ Hết giờ live tại **{room}**, bạn đã được tự động đưa ra khỏi voice channel.\nKết quả: {result}",
+   "log.adminCancelled": "❌ BTC đã hủy lịch của bạn — **{room}** — {time}. Liên hệ BTC nếu cần hỗ trợ.",
+   "dm.adminCancelled": "Lịch host của bạn tại **{room}** lúc {time} đã bị BTC hủy. Liên hệ BTC nếu cần hỗ trợ.",
+-
++  
+   "validity.valid": "✅ Hợp lệ ({duration} phút, đỉnh {viewers} viewer)",
+   "validity.invalid": "⚠️ Không hợp lệ ({duration} phút, đỉnh {viewers} viewer — chưa đạt mức tối thiểu)",
+-
++  
+   "errors.generic": "❌ Có lỗi hệ thống, vui lòng thử lại sau.",
+   "errors.SLOT_TAKEN": "Khung giờ này vừa có người khác đặt mất rồi, bạn chọn giờ khác nhé.",
+   "errors.REGISTRATION_CLOSED": "Cửa sổ đăng ký đã đóng hoặc chưa mở.",
+   "errors.SLOT_OUTSIDE_SCHEDULE": "Khung giờ này đã qua hoặc nằm ngoài khoảng thời gian được phép đăng ký.",
+   "errors.MAX_PER_DAY": "Mỗi người chỉ được đặt tối đa {max} slot/ngày (bạn đã có {count} slot trong ngày này).",
+   "errors.MAX_ACTIVE": "Bạn đã đạt giới hạn {max} slot đang chờ/live (hiện có {count}).",
++  "errors.INVALID_INGAME_ROLE_ID": "ID nhân vật ingame phải là số nguyên dương, tối đa 19 chữ số và không vượt quá 9223372036854775807.",
+   "errors.NOT_FOUND_OWN": "Không tìm thấy lịch đặt này của bạn.",
+   "errors.CANNOT_CANCEL": "Lịch này không thể hủy nữa.",
+   "errors.NOT_FOUND_ADMIN": "Không tìm thấy booking này.",
+diff --git a/src/services/bookingExportService.ts b/src/services/bookingExportService.ts
+index 6b91f2d..f683e7a 100644
+--- a/src/services/bookingExportService.ts
++++ b/src/services/bookingExportService.ts
+@@ -65,6 +65,7 @@ export async function generateBookingsWorkbook(
+   worksheet.columns = [
+     { header: 'Booking ID', key: 'id', width: 27 },
+     { header: 'Discord User ID', key: 'userId', width: 22 },
++    { header: 'ID nhân vật ingame', key: 'ingameRoleId', width: 22 },
+     { header: 'Username', key: 'username', width: 22 },
+     { header: 'Phòng live', key: 'roomLabel', width: 22 },
+     { header: 'Room ID', key: 'roomId', width: 18 },
+@@ -88,6 +89,7 @@ export async function generateBookingsWorkbook(
+     const row = worksheet.addRow({
+       id: booking.id,
+       userId: booking.userId,
++      ingameRoleId: booking.ingameRoleId?.toString() ?? '',
+       username: booking.username,
+       roomLabel: roomLabels.get(booking.roomId) ?? booking.roomId,
+       roomId: booking.roomId,
+@@ -128,8 +130,8 @@ export async function generateBookingsWorkbook(
+   header.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5865F2' } };
+   header.alignment = { vertical: 'middle', horizontal: 'center' };
+ 
+-  worksheet.autoFilter = { from: 'A1', to: 'R1' };
+-  for (const key of ['id', 'userId', 'roomId']) {
++  worksheet.autoFilter = { from: 'A1', to: 'S1' };
++  for (const key of ['id', 'userId', 'ingameRoleId', 'roomId']) {
+     worksheet.getColumn(key).numFmt = '@';
+   }
+   worksheet.getColumn('content').alignment = { vertical: 'top', wrapText: true };
+diff --git a/src/services/bookingService.ts b/src/services/bookingService.ts
+index c08dca9..c6332a3 100644
+--- a/src/services/bookingService.ts
++++ b/src/services/bookingService.ts
+@@ -10,6 +10,7 @@ export type BookingErrorCode =
+   | 'SLOT_OUTSIDE_SCHEDULE'
+   | 'MAX_PER_DAY'
+   | 'MAX_ACTIVE'
++  | 'INVALID_INGAME_ROLE_ID'
+   | 'NOT_FOUND_OWN'
+   | 'CANNOT_CANCEL'
+   | 'NOT_FOUND_ADMIN'
+@@ -26,6 +27,21 @@ export class BookingError extends Error {
+ }
+ 
+ const ACTIVE_STATUSES: BookingStatus[] = ['PENDING', 'LIVE'];
++const MAX_BIGINT = 9223372036854775807n;
++
++function parseIngameRoleId(value: string): bigint {
++  const normalized = value.trim();
++  if (!/^\d+$/.test(normalized)) {
++    throw new BookingError('INVALID_INGAME_ROLE_ID');
++  }
++
++  const ingameRoleId = BigInt(normalized);
++  if (ingameRoleId <= 0n || ingameRoleId > MAX_BIGINT) {
++    throw new BookingError('INVALID_INGAME_ROLE_ID');
++  }
++
++  return ingameRoleId;
++}
+ 
+ /** Slot đã có người đặt chưa (cùng phòng, cùng giờ bắt đầu, còn active) */
+ export async function isSlotTaken(roomId: string, startTime: Date): Promise<boolean> {
+@@ -90,7 +106,9 @@ export async function createBooking(params: {
+   startTime: Date;
+   endTime: Date;
+   livestreamContent: string;
++  ingameRoleId: string;
+ }) {
++  const ingameRoleId = parseIngameRoleId(params.ingameRoleId);
+   await assertCanBook(params.userId, params.roomId, params.startTime, params.endTime);
+ 
+   return prisma.booking.create({
+@@ -102,6 +120,7 @@ export async function createBooking(params: {
+       endTime: params.endTime,
+       status: 'PENDING',
+       livestreamContent: params.livestreamContent,
++      ingameRoleId,
+     },
+   });
+ }
+diff --git a/src/services/userThreadService.ts b/src/services/userThreadService.ts
+index b3b0964..0a896c8 100644
+--- a/src/services/userThreadService.ts
++++ b/src/services/userThreadService.ts
+@@ -14,7 +14,7 @@ export async function getOrCreateUserThread(client: Client, userId: string, user
+   const thread = await parent.threads.create({
+     name: `lich-${username}`,
+     type: ChannelType.PrivateThread,
+-    autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
++    autoArchiveDuration: ThreadAutoArchiveDuration.OneDay,
+     reason: 'Thread cá nhân theo dõi booking',
+   });
+   await thread.members.add(userId);
+@@ -30,12 +30,20 @@ export async function getOrCreateUserThread(client: Client, userId: string, user
+ 
+ /** Log 1 sự kiện booking (đăng ký, hủy, bắt đầu/kết thúc live...) vào thread riêng của user */
+ export async function logBookingEvent(client: Client, userId: string, username: string, message: string): Promise<void> {
+-  const thread = await getOrCreateUserThread(client, userId, username);
+-  await thread.send(message);
++  try {
++    const thread = await getOrCreateUserThread(client, userId, username);
++    await thread.send(message);
++  } catch (err) {
++    console.error(`[UserThread] Không thể log event vào thread của user ${userId}:`, err);
++  }
+ }
+ 
+ /** Log 1 sự kiện booking vào kênh admin portal, để admin có audit trail tổng hợp của mọi user */
+ export async function logAdminAudit(client: Client, message: string): Promise<void> {
+-  const channel = (await client.channels.fetch(env.adminPortalChannelId).catch(() => null)) as TextChannel | null;
+-  if (channel) await channel.send(message);
++  try {
++    const channel = (await client.channels.fetch(env.adminPortalChannelId).catch(() => null)) as TextChannel | null;
++    if (channel) await channel.send(message);
++  } catch (err) {
++    console.error('[UserThread] Không thể log admin audit:', err);
++  }
+ }

@@ -15,7 +15,8 @@ export async function handleBookingModal(interaction: ModalSubmitInteraction) {
   const dateStr = parts[2];
   const slot = parts.slice(3).join(':');
   const livestreamContent = interaction.fields.getTextInputValue('livestream_content_input');
-  console.log(`[Register] User ${interaction.user.tag} (${interaction.user.id}) submitted booking modal (room: ${roomId}, date: ${dateStr}, slot: ${slot}, content: "${livestreamContent}").`);
+  const ingameRoleId = interaction.fields.getTextInputValue('ingame_role_id_input');
+  console.log(`[Register] User ${interaction.user.tag} (${interaction.user.id}) submitted booking modal (room: ${roomId}, date: ${dateStr}, slot: ${slot}, content: "${livestreamContent}", ingame character ID: ${ingameRoleId}).`);
   const [settings, lang] = await Promise.all([getSettings(), getUserLanguage(interaction.user.id)]);
   const room = settings.rooms.find((r) => r.id === roomId);
 
@@ -37,6 +38,7 @@ export async function handleBookingModal(interaction: ModalSubmitInteraction) {
       startTime: candidate.start,
       endTime: candidate.end,
       livestreamContent,
+      ingameRoleId,
     });
 
     console.log(`[Register] User ${interaction.user.tag} (${interaction.user.id}) booking created successfully: ID ${booking.id}.`);
@@ -46,9 +48,11 @@ export async function handleBookingModal(interaction: ModalSubmitInteraction) {
     const end = formatDateTimeVN(booking.endTime);
     const contentLine = booking.livestreamContent ? t('register.contentLine', lang, { content: booking.livestreamContent }) : '';
     const contentSuffix = booking.livestreamContent ? ` — ${booking.livestreamContent}` : '';
+    const savedIngameRoleId = booking.ingameRoleId!.toString();
+    const ingameRoleIdLine = t('register.ingameRoleIdLine', lang, { ingameRoleId: savedIngameRoleId });
 
     await interaction.update({
-      content: t('register.success', lang, { room: roomLabel, start, end, contentLine }),
+      content: t('register.success', lang, { room: roomLabel, start, end, contentLine, ingameRoleIdLine }),
       components: [],
     });
 
@@ -56,12 +60,12 @@ export async function handleBookingModal(interaction: ModalSubmitInteraction) {
       interaction.client,
       booking.userId,
       booking.username,
-      t('log.registerSuccess', lang, { room: roomLabel, start, end, contentSuffix })
+      t('log.registerSuccess', lang, { room: roomLabel, start, end, contentSuffix, ingameRoleId: savedIngameRoleId })
     );
 
     await logAdminAudit(
       interaction.client,
-      `📥 <@${booking.userId}> vừa đăng ký lịch — **${roomLabel}** — ${start}→${end}${contentSuffix}`
+      `📥 <@${booking.userId}> vừa đăng ký lịch — **${roomLabel}** — ${start}→${end}${contentSuffix} — ID nhân vật ingame: **${savedIngameRoleId}**`
     );
 
     await refreshPublicTimeline(interaction.client).catch((err) =>

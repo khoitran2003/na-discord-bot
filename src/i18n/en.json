@@ -16,39 +16,44 @@
   "register.selectTimePlaceholderRange": "Choose a time slot ({first} → {last})",
   "register.step3": "**Step 3/3:** Room **{room}** selected. Now choose a time slot:",
   "register.slotExpired": "⚠️ This time slot has passed or is outside the configured schedule, please start over.",
-  "register.modalTitle": "Livestream content",
-  "register.contentLabel": "Content / Topic (optional, max 50 characters)",
+  "register.modalTitle": "Livestream details",
+  "register.contentLabel": "Content / Topic (max 50 characters)",
   "register.contentPlaceholder": "E.g.: Just chatting, gaming, studying...",
-  "register.success": "✅ **Registration successful!**\n📍 Room: **{room}**\n🗓️ Time: **{start} → {end}**{contentLine}\n\nThe bot will automatically grant your permissions at the scheduled time.",
+  "register.ingameRoleIdLabel": "Ingame Character ID (required, numbers only)",
+  "register.ingameRoleIdPlaceholder": "E.g.: 123456789",
+  "register.success": "✅ **Registration successful!**\n📍 Room: **{room}**\n🗓️ Time: **{start} → {end}**{contentLine}{ingameRoleIdLine}\n\nThe bot will automatically grant your permissions at the scheduled time.",
   "register.contentLine": "\n📝 Content: **{content}**",
-
+  "register.ingameRoleIdLine": "\n🎮 Ingame Character ID: **{ingameRoleId}**",
+  
   "cancel.noActive": "You don't have any bookings to cancel.",
   "cancel.selectPlaceholder": "Choose a booking to cancel",
   "cancel.selectPrompt": "Choose the booking you want to cancel:",
   "cancel.success": "✅ Booking cancelled successfully.",
-
+  
   "schedule.empty": "You don't have any pending/live bookings.",
   "schedule.statusLive": "🔴 Live",
   "schedule.statusPending": "🟡 Pending",
+  "schedule.ingameRoleIdSuffix": " — Ingame Character ID: `{ingameRoleId}`",
   "schedule.list": "**Your schedule:**\n{lines}\n\nWant to cancel? Tap the \"Cancel\" button on the main message.",
-
-  "log.registerSuccess": "✅ Registration successful — **{room}** — {start}→{end}{contentSuffix}",
+  
+  "log.registerSuccess": "✅ Registration successful — **{room}** — {start}→{end}{contentSuffix} — Ingame Character ID: **{ingameRoleId}**",
   "log.selfCancel": "🗑️ You cancelled a booking — **{room}** — {start}→{end}",
   "log.liveStarted": "🔴 Live started — **{room}** — {start}→{end}",
   "log.liveEndedManual": "🏁 You ended your live at **{room}**.\nResult: {result}",
   "log.liveEndedAuto": "⏰ Time's up for your live at **{room}**, you were automatically removed from the voice channel.\nResult: {result}",
   "log.adminCancelled": "❌ The organizers cancelled your booking — **{room}** — {time}. Contact the organizers if you need help.",
   "dm.adminCancelled": "Your hosting slot at **{room}** at {time} has been cancelled by the organizers. Contact the organizers if you need help.",
-
+  
   "validity.valid": "✅ Valid ({duration} min, peak {viewers} viewer(s))",
   "validity.invalid": "⚠️ Not valid ({duration} min, peak {viewers} viewer(s) — below the minimum requirement)",
-
+  
   "errors.generic": "❌ A system error occurred, please try again later.",
   "errors.SLOT_TAKEN": "This time slot was just taken by someone else, please pick another one.",
   "errors.REGISTRATION_CLOSED": "The registration window is closed or has not opened yet.",
   "errors.SLOT_OUTSIDE_SCHEDULE": "This time slot has passed or is outside the configured schedule.",
   "errors.MAX_PER_DAY": "Each person can only book up to {max} slot(s)/day (you already have {count} on this day).",
   "errors.MAX_ACTIVE": "You've reached the limit of {max} pending/live slot(s) (currently {count}).",
+  "errors.INVALID_INGAME_ROLE_ID": "Ingame Character ID must be a positive integer of up to 19 digits and no greater than 9223372036854775807.",
   "errors.NOT_FOUND_OWN": "Couldn't find this booking of yours.",
   "errors.CANNOT_CANCEL": "This booking can no longer be cancelled.",
   "errors.NOT_FOUND_ADMIN": "Couldn't find this booking.",

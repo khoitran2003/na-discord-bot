@@ -65,6 +65,7 @@ export async function generateBookingsWorkbook(
   worksheet.columns = [
     { header: 'Booking ID', key: 'id', width: 27 },
     { header: 'Discord User ID', key: 'userId', width: 22 },
+    { header: 'ID nhân vật ingame', key: 'ingameRoleId', width: 22 },
     { header: 'Username', key: 'username', width: 22 },
     { header: 'Phòng live', key: 'roomLabel', width: 22 },
     { header: 'Room ID', key: 'roomId', width: 18 },
@@ -88,6 +89,7 @@ export async function generateBookingsWorkbook(
     const row = worksheet.addRow({
       id: booking.id,
       userId: booking.userId,
+      ingameRoleId: booking.ingameRoleId?.toString() ?? '',
       username: booking.username,
       roomLabel: roomLabels.get(booking.roomId) ?? booking.roomId,
       roomId: booking.roomId,
@@ -128,8 +130,8 @@ export async function generateBookingsWorkbook(
   header.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5865F2' } };
   header.alignment = { vertical: 'middle', horizontal: 'center' };
 
-  worksheet.autoFilter = { from: 'A1', to: 'R1' };
-  for (const key of ['id', 'userId', 'roomId']) {
+  worksheet.autoFilter = { from: 'A1', to: 'S1' };
+  for (const key of ['id', 'userId', 'ingameRoleId', 'roomId']) {
     worksheet.getColumn(key).numFmt = '@';
   }
   worksheet.getColumn('content').alignment = { vertical: 'top', wrapText: true };

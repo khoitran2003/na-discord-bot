@@ -31,8 +31,18 @@ export async function handleTimeSelect(interaction: StringSelectMenuInteraction)
     .setMaxLength(50)
     .setRequired(false);
 
-  const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(contentInput);
-  modal.addComponents(actionRow);
+  const ingameRoleIdInput = new TextInputBuilder()
+    .setCustomId('ingame_role_id_input')
+    .setLabel(t('register.ingameRoleIdLabel', lang))
+    .setPlaceholder(t('register.ingameRoleIdPlaceholder', lang))
+    .setStyle(TextInputStyle.Short)
+    .setMinLength(1)
+    .setMaxLength(19)
+    .setRequired(true);
+
+  const contentRow = new ActionRowBuilder<TextInputBuilder>().addComponents(contentInput);
+  const ingameRoleIdRow = new ActionRowBuilder<TextInputBuilder>().addComponents(ingameRoleIdInput);
+  modal.addComponents(contentRow, ingameRoleIdRow);
 
   await interaction.showModal(modal);
 }

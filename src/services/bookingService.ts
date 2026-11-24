@@ -10,6 +10,7 @@ export type BookingErrorCode =
   | 'SLOT_OUTSIDE_SCHEDULE'
   | 'MAX_PER_DAY'
   | 'MAX_ACTIVE'
+  | 'INVALID_INGAME_ROLE_ID'
   | 'NOT_FOUND_OWN'
   | 'CANNOT_CANCEL'
   | 'NOT_FOUND_ADMIN'
@@ -26,6 +27,21 @@ export class BookingError extends Error {
 }
 
 const ACTIVE_STATUSES: BookingStatus[] = ['PENDING', 'LIVE'];
+const MAX_BIGINT = 9223372036854775807n;
+
+function parseIngameRoleId(value: string): bigint {
+  const normalized = value.trim();
+  if (!/^\d+$/.test(normalized)) {
+    throw new BookingError('INVALID_INGAME_ROLE_ID');
+  }
+
+  const ingameRoleId = BigInt(normalized);
+  if (ingameRoleId <= 0n || ingameRoleId > MAX_BIGINT) {
+    throw new BookingError('INVALID_INGAME_ROLE_ID');
+  }
+
+  return ingameRoleId;
+}
 
 /** Slot đã có người đặt chưa (cùng phòng, cùng giờ bắt đầu, còn active) */
 export async function isSlotTaken(roomId: string, startTime: Date): Promise<boolean> {
@@ -90,7 +106,9 @@ export async function createBooking(params: {
   startTime: Date;
   endTime: Date;
   livestreamContent: string;
+  ingameRoleId: string;
 }) {
+  const ingameRoleId = parseIngameRoleId(params.ingameRoleId);
   await assertCanBook(params.userId, params.roomId, params.startTime, params.endTime);
 
   return prisma.booking.create({
@@ -102,6 +120,7 @@ export async function createBooking(params: {
       endTime: params.endTime,
       status: 'PENDING',
       livestreamContent: params.livestreamContent,
+      ingameRoleId,
     },
   });
 }

@@ -8,22 +8,23 @@ generator client {
 }
 
 model Booking {
-  id           String   @id @default(cuid())
-  userId       String
-  username     String
-  roomId       String
-  startTime    DateTime
-  endTime      DateTime
-  status       String   @default("PENDING")
-  roleGranted       Boolean  @default(false)
-  livestreamContent String   @default("") @map("livestream_content")
+  id                String    @id @default(cuid())
+  userId            String
+  username          String
+  ingameRoleId      BigInt?
+  roomId            String
+  startTime         DateTime
+  endTime           DateTime
+  status            String    @default("PENDING")
+  roleGranted       Boolean   @default(false)
+  livestreamContent String    @default("") @map("livestream_content")
   actualStartAt     DateTime?
   actualEndAt       DateTime?
-  peakViewers       Int      @default(0)
+  peakViewers       Int       @default(0)
   isValidLive       Boolean?
   endReason         String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([userId])
   @@index([roomId, startTime])

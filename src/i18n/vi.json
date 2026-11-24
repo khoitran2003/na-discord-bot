@@ -16,39 +16,44 @@
   "register.selectTimePlaceholderRange": "Chọn giờ live ({first} → {last})",
   "register.step3": "**Bước 3/3:** Đã chọn phòng **{room}**. Giờ chọn khung giờ live:",
   "register.slotExpired": "⚠️ Khung giờ này đã qua hoặc không còn nằm trong khoảng thời gian được phép đăng ký, vui lòng thao tác lại từ đầu.",
-  "register.modalTitle": "Nội dung livestream",
-  "register.contentLabel": "Nội dung / Chủ đề (không bắt buộc, tối đa 50 ký tự)",
+  "register.modalTitle": "Thông tin livestream",
+  "register.contentLabel": "Nội dung / Chủ đề (tối đa 50 ký tự)",
   "register.contentPlaceholder": "Ví dụ: Live tâm sự, chơi game, học tập...",
-  "register.success": "✅ **Đăng ký thành công!**\n📍 Phòng: **{room}**\n🗓️ Thời gian: **{start} → {end}**{contentLine}\n\nBot sẽ tự động cấp quyền cho bạn đúng giờ live.",
+  "register.ingameRoleIdLabel": "ID nhân vật ingame (bắt buộc, chỉ nhập số)",
+  "register.ingameRoleIdPlaceholder": "Ví dụ: 123456789",
+  "register.success": "✅ **Đăng ký thành công!**\n📍 Phòng: **{room}**\n🗓️ Thời gian: **{start} → {end}**{contentLine}{ingameRoleIdLine}\n\nBot sẽ tự động cấp quyền cho bạn đúng giờ live.",
   "register.contentLine": "\n📝 Nội dung: **{content}**",
-
+  "register.ingameRoleIdLine": "\n🎮 ID nhân vật ingame: **{ingameRoleId}**",
+  
   "cancel.noActive": "Bạn không có lịch nào để hủy.",
   "cancel.selectPlaceholder": "Chọn lịch muốn hủy",
   "cancel.selectPrompt": "Chọn lịch bạn muốn hủy:",
   "cancel.success": "✅ Đã hủy lịch thành công.",
-
+  
   "schedule.empty": "Bạn chưa có lịch nào đang chờ/live.",
   "schedule.statusLive": "🔴 Đang live",
   "schedule.statusPending": "🟡 Đang chờ",
+  "schedule.ingameRoleIdSuffix": " — ID nhân vật ingame: `{ingameRoleId}`",
   "schedule.list": "**Lịch của bạn:**\n{lines}\n\nMuốn hủy? Bấm nút \"Hủy\" ở tin nhắn chính.",
-
-  "log.registerSuccess": "✅ Đăng ký thành công — **{room}** — {start}→{end}{contentSuffix}",
+  
+  "log.registerSuccess": "✅ Đăng ký thành công — **{room}** — {start}→{end}{contentSuffix} — ID nhân vật ingame: **{ingameRoleId}**",
   "log.selfCancel": "🗑️ Bạn đã hủy lịch — **{room}** — {start}→{end}",
   "log.liveStarted": "🔴 Đã bắt đầu live — **{room}** — {start}→{end}",
   "log.liveEndedManual": "🏁 Bạn đã kết thúc live tại **{room}**.\nKết quả: {result}",
   "log.liveEndedAuto": "⏰ Hết giờ live tại **{room}**, bạn đã được tự động đưa ra khỏi voice channel.\nKết quả: {result}",
   "log.adminCancelled": "❌ BTC đã hủy lịch của bạn — **{room}** — {time}. Liên hệ BTC nếu cần hỗ trợ.",
   "dm.adminCancelled": "Lịch host của bạn tại **{room}** lúc {time} đã bị BTC hủy. Liên hệ BTC nếu cần hỗ trợ.",
-
+  
   "validity.valid": "✅ Hợp lệ ({duration} phút, đỉnh {viewers} viewer)",
   "validity.invalid": "⚠️ Không hợp lệ ({duration} phút, đỉnh {viewers} viewer — chưa đạt mức tối thiểu)",
-
+  
   "errors.generic": "❌ Có lỗi hệ thống, vui lòng thử lại sau.",
   "errors.SLOT_TAKEN": "Khung giờ này vừa có người khác đặt mất rồi, bạn chọn giờ khác nhé.",
   "errors.REGISTRATION_CLOSED": "Cửa sổ đăng ký đã đóng hoặc chưa mở.",
   "errors.SLOT_OUTSIDE_SCHEDULE": "Khung giờ này đã qua hoặc nằm ngoài khoảng thời gian được phép đăng ký.",
   "errors.MAX_PER_DAY": "Mỗi người chỉ được đặt tối đa {max} slot/ngày (bạn đã có {count} slot trong ngày này).",
   "errors.MAX_ACTIVE": "Bạn đã đạt giới hạn {max} slot đang chờ/live (hiện có {count}).",
+  "errors.INVALID_INGAME_ROLE_ID": "ID nhân vật ingame phải là số nguyên dương, tối đa 19 chữ số và không vượt quá 9223372036854775807.",
   "errors.NOT_FOUND_OWN": "Không tìm thấy lịch đặt này của bạn.",
   "errors.CANNOT_CANCEL": "Lịch này không thể hủy nữa.",
   "errors.NOT_FOUND_ADMIN": "Không tìm thấy booking này.",
