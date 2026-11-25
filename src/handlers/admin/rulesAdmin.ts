@@ -31,7 +31,17 @@ export async function handleManageRulesButton(interaction: ButtonInteraction) {
     .setLabel('Sửa rule live hợp lệ')
     .setEmoji('📺')
     .setStyle(ButtonStyle.Primary);
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(numbersButton, scheduleButton, liveValidityButton);
+  const antiFraudButton = new ButtonBuilder()
+    .setCustomId('admin_rules_edit_antifraud')
+    .setLabel('Sửa chống gian lận')
+    .setEmoji('🛡️')
+    .setStyle(ButtonStyle.Secondary);
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    numbersButton,
+    scheduleButton,
+    liveValidityButton,
+    antiFraudButton
+  );
 
   await interaction.reply({
     content:
@@ -41,7 +51,8 @@ export async function handleManageRulesButton(interaction: ButtonInteraction) {
       `🗓️ Cửa sổ đăng ký: **${formatDateTimeVN(settings.registrationWindow.start)} → ${formatDateTimeVN(settings.registrationWindow.end)}**\n` +
       `▶️ Giờ bắt đầu: **${formatDateTimeVN(settings.startTime)}**\n` +
       `⏹️ Giờ kết thúc: **${formatDateTimeVN(settings.endTime)}**\n` +
-      `📺 Live hợp lệ: tối thiểu **${settings.minLiveDurationMinutes} phút**, đỉnh **${settings.minViewers} viewer**`,
+      `📺 Live hợp lệ: tối thiểu **${settings.minLiveDurationMinutes} phút**, tối thiểu **${settings.minViewers} viewer đạt chuẩn**\n` +
+      `🛡️ Chống gian lận: Bắt buộc share/cam: **${settings.requireHostStreaming ? 'Có' : 'Không'}** | Viewer ở lại ≥ **${settings.minViewerDwellMinutes}p** | Tuổi acc ≥ **${settings.minViewerAccountAgeDays} ngày** | Ở server ≥ **${settings.minViewerGuildAgeHours}h** | Giới hạn lặp viewer: **${settings.maxRepeatViewerBookings === 0 ? 'Tắt' : settings.maxRepeatViewerBookings + ' lần'}**`,
     components: [row],
     ephemeral: true,
   });
@@ -188,23 +199,23 @@ export async function handleRulesEditLiveValidityButton(interaction: ButtonInter
   const settings = await getSettings();
   const modal = new ModalBuilder().setCustomId('admin_modal_rules_live_validity').setTitle('Sửa rule live hợp lệ');
 
-  const durationInput = new TextInputBuilder()
-    .setCustomId('min_live_duration_input')
-    .setLabel('Thời lượng live tối thiểu (phút)')
-    .setStyle(TextInputStyle.Short)
-    .setValue(String(settings.minLiveDurationMinutes))
-    .setRequired(true);
-  const viewersInput = new TextInputBuilder()
-    .setCustomId('min_viewers_input')
-    .setLabel('Đỉnh viewer tối thiểu (không tính host)')
-    .setStyle(TextInputStyle.Short)
-    .setValue(String(settings.minViewers))
-    .setRequired(true);
+  const fields: [string, string, number][] = [
+    ['min_live_duration_input', 'Thời lượng live tối thiểu (phút)', settings.minLiveDurationMinutes],
+    ['min_viewers_input', 'Viewer đạt chuẩn tối thiểu (không tính host)', settings.minViewers],
+    ['min_dwell_input', 'Thời gian viewer ở lại tối thiểu (phút)', settings.minViewerDwellMinutes],
+    ['min_account_age_input', 'Tuổi tài khoản viewer tối thiểu (ngày)', settings.minViewerAccountAgeDays],
+    ['min_guild_age_input', 'Thời gian viewer ở server tối thiểu (giờ)', settings.minViewerGuildAgeHours],
+  ];
 
-  modal.addComponents(
-    new ActionRowBuilder<TextInputBuilder>().addComponents(durationInput),
-    new ActionRowBuilder<TextInputBuilder>().addComponents(viewersInput)
-  );
+  for (const [customId, label, value] of fields) {
+    const input = new TextInputBuilder()
+      .setCustomId(customId)
+      .setLabel(label)
+      .setStyle(TextInputStyle.Short)
+      .setValue(String(value))
+      .setRequired(true);
+    modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(input));
+  }
 
   await interaction.showModal(modal);
 }
@@ -214,10 +225,21 @@ export async function handleRulesLiveValidityModal(interaction: ModalSubmitInter
 
   const minLiveDurationMinutes = Number(interaction.fields.getTextInputValue('min_live_duration_input'));
   const minViewers = Number(interaction.fields.getTextInputValue('min_viewers_input'));
+  const minViewerDwellMinutes = Number(interaction.fields.getTextInputValue('min_dwell_input'));
+  const minViewerAccountAgeDays = Number(interaction.fields.getTextInputValue('min_account_age_input'));
+  const minViewerGuildAgeHours = Number(interaction.fields.getTextInputValue('min_guild_age_input'));
 
-  if (!Number.isInteger(minLiveDurationMinutes) || minLiveDurationMinutes < 0 || !Number.isInteger(minViewers) || minViewers < 0) {
+  const values = [
+    minLiveDurationMinutes,
+    minViewers,
+    minViewerDwellMinutes,
+    minViewerAccountAgeDays,
+    minViewerGuildAgeHours,
+  ];
+
+  if (values.some((v) => !Number.isInteger(v) || v < 0)) {
     await interaction.reply({
-      content: '⚠️ Giá trị nhập không hợp lệ (phải là số nguyên >= 0).',
+      content: '⚠️ Giá trị nhập không hợp lệ (tất cả phải là số nguyên >= 0).',
       ephemeral: true,
     });
     return;
@@ -235,6 +257,79 @@ export async function handleRulesLiveValidityModal(interaction: ModalSubmitInter
     return;
   }
 
-  await updateSettings({ minLiveDurationMinutes, minViewers });
+  await updateSettings({
+    minLiveDurationMinutes,
+    minViewers,
+    minViewerDwellMinutes,
+    minViewerAccountAgeDays,
+    minViewerGuildAgeHours,
+  });
   await interaction.reply({ content: '✅ Đã cập nhật rule live hợp lệ.', ephemeral: true });
+}
+
+export async function handleRulesEditAntiFraudButton(interaction: ButtonInteraction) {
+  if (!(await requireManageGuild(interaction))) return;
+
+  const settings = await getSettings();
+  const modal = new ModalBuilder().setCustomId('admin_modal_rules_antifraud').setTitle('Sửa chống gian lận');
+
+  const requireStreamingInput = new TextInputBuilder()
+    .setCustomId('require_streaming_input')
+    .setLabel('Bắt buộc share stream/cam? (co/khong)')
+    .setStyle(TextInputStyle.Short)
+    .setValue(settings.requireHostStreaming ? 'co' : 'khong')
+    .setRequired(true);
+
+  const maxRepeatViewerInput = new TextInputBuilder()
+    .setCustomId('max_repeat_viewer_input')
+    .setLabel('Giới hạn lặp viewer giữa các buổi (0=tắt)')
+    .setStyle(TextInputStyle.Short)
+    .setValue(String(settings.maxRepeatViewerBookings))
+    .setRequired(true);
+
+  modal.addComponents(
+    new ActionRowBuilder<TextInputBuilder>().addComponents(requireStreamingInput),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(maxRepeatViewerInput)
+  );
+
+  await interaction.showModal(modal);
+}
+
+const TRUE_STRINGS = new Set(['co', 'có', 'true', '1', 'yes']);
+const FALSE_STRINGS = new Set(['khong', 'không', 'false', '0', 'no']);
+
+export async function handleRulesAntiFraudModal(interaction: ModalSubmitInteraction) {
+  if (!(await requireManageGuild(interaction))) return;
+
+  const rawRequireStreaming = interaction.fields.getTextInputValue('require_streaming_input').trim().toLowerCase();
+  let requireHostStreaming: boolean;
+  if (TRUE_STRINGS.has(rawRequireStreaming)) {
+    requireHostStreaming = true;
+  } else if (FALSE_STRINGS.has(rawRequireStreaming)) {
+    requireHostStreaming = false;
+  } else {
+    await interaction.reply({
+      content: '⚠️ Giá trị "Bắt buộc share stream/cam" không hợp lệ. Vui lòng nhập `co` hoặc `khong`.',
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const maxRepeatViewerBookings = Number(interaction.fields.getTextInputValue('max_repeat_viewer_input').trim());
+  if (!Number.isInteger(maxRepeatViewerBookings) || maxRepeatViewerBookings < 0) {
+    await interaction.reply({
+      content: '⚠️ Giới hạn lặp viewer phải là số nguyên >= 0.',
+      ephemeral: true,
+    });
+    return;
+  }
+
+  await updateSettings({ requireHostStreaming, maxRepeatViewerBookings });
+  await interaction.reply({
+    content:
+      `✅ Đã cập nhật cấu hình chống gian lận.\n` +
+      `🛡️ Bắt buộc share/cam: **${requireHostStreaming ? 'Có' : 'Không'}**\n` +
+      `🔁 Giới hạn lặp viewer: **${maxRepeatViewerBookings === 0 ? 'Tắt' : `${maxRepeatViewerBookings} lần`}**`,
+    ephemeral: true,
+  });
 }

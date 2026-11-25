@@ -82,6 +82,11 @@ export async function generateBookingsWorkbook(
     { header: 'Đã cấp quyền', key: 'roleGranted', width: 15 },
     { header: 'Ngày tạo', key: 'createdAt', width: 20 },
     { header: 'Ngày cập nhật', key: 'updatedAt', width: 20 },
+    { header: 'Phút stream thực tế', key: 'streamMinutes', width: 18 },
+    { header: 'Viewer đạt chuẩn', key: 'qualifiedViewers', width: 18 },
+    { header: 'Nghi ngờ gian lận', key: 'suspicious', width: 18 },
+    { header: 'Lý do nghi ngờ', key: 'suspiciousReason', width: 32 },
+    { header: 'Chi tiết viewer (ID:phút)', key: 'viewerDetails', width: 40 },
   ];
 
   for (const booking of bookings) {
@@ -106,6 +111,11 @@ export async function generateBookingsWorkbook(
       roleGranted: booking.roleGranted ? 'Có' : 'Không',
       createdAt: toExcelDate(booking.createdAt),
       updatedAt: toExcelDate(booking.updatedAt),
+      streamMinutes: Math.floor(booking.streamSeconds / 60),
+      qualifiedViewers: booking.qualifiedViewers,
+      suspicious: booking.suspicious ? 'Có' : 'Không',
+      suspiciousReason: booking.suspiciousReason ?? '',
+      viewerDetails: booking.viewers?.map((v) => `${v.userId}:${Math.floor(v.dwellSeconds / 60)}p`).join(', ') ?? '',
     });
 
     row.height = 20;
@@ -130,12 +140,14 @@ export async function generateBookingsWorkbook(
   header.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5865F2' } };
   header.alignment = { vertical: 'middle', horizontal: 'center' };
 
-  worksheet.autoFilter = { from: 'A1', to: 'S1' };
+  worksheet.autoFilter = { from: 'A1', to: 'X1' };
   for (const key of ['id', 'userId', 'ingameRoleId', 'roomId']) {
     worksheet.getColumn(key).numFmt = '@';
   }
   worksheet.getColumn('content').alignment = { vertical: 'top', wrapText: true };
-  worksheet.getColumn('peakViewers').numFmt = '#,##0';
+  for (const key of ['peakViewers', 'streamMinutes', 'qualifiedViewers']) {
+    worksheet.getColumn(key).numFmt = '#,##0';
+  }
 
   for (const key of ['startTime', 'endTime', 'actualStartAt', 'actualEndAt', 'createdAt', 'updatedAt']) {
     worksheet.getColumn(key).numFmt = 'dd/mm/yyyy hh:mm';

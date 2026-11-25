@@ -1,4 +1,4 @@
-import { ChannelType, Client, VoiceChannel } from 'discord.js';
+import { ChannelType, Client, GuildMember, VoiceChannel } from 'discord.js';
 import { env } from '../config';
 import { getSettings } from './settingsService';
 
@@ -38,12 +38,72 @@ export async function revokeRoomAccess(client: Client, userId: string, roomId: s
   return true;
 }
 
-/** Đếm số viewer hiện tại trong voice channel của phòng (trừ host) — null nếu không xác định được channel */
-export async function countRoomViewers(client: Client, roomId: string, hostUserId: string): Promise<number | null> {
+export interface RoomSample {
+  hostPresent: boolean;
+  hostStreaming: boolean;
+  qualifiedMembers: GuildMember[]; // non-bot, non-host, not deaf/selfDeaf, account age >= minViewerAccountAgeDays, guild age >= minViewerGuildAgeHours, not another live host
+  rawViewerCount: number; // non-bot, non-host in channel (for peakViewers backward compat)
+}
+
+export interface ViewerFilterOptions {
+  minAccountAgeDays: number;
+  minGuildAgeHours: number;
+  activeHostUserIds?: Set<string>;
+  nowMs?: number;
+}
+
+/** Lọc danh sách viewer đủ điều kiện chống gian lận từ các thành viên đang ở trong voice channel */
+export function filterQualifiedViewers(
+  members: Iterable<GuildMember>,
+  hostUserId: string,
+  options: ViewerFilterOptions
+): { qualifiedMembers: GuildMember[]; rawViewerCount: number } {
+  const nowMs = options.nowMs ?? Date.now();
+  const minAccountAgeMs = options.minAccountAgeDays * 86_400_000;
+  const minGuildAgeMs = options.minGuildAgeHours * 3_600_000;
+  const qualifiedMembers: GuildMember[] = [];
+  let rawViewerCount = 0;
+
+  for (const member of members) {
+    if (member.id === hostUserId || member.user.bot) continue;
+    rawViewerCount += 1;
+
+    if (member.voice.deaf || member.voice.selfDeaf || member.voice.serverDeaf) continue;
+    if (nowMs - member.user.createdTimestamp < minAccountAgeMs) continue;
+    if (member.joinedTimestamp == null || nowMs - member.joinedTimestamp < minGuildAgeMs) continue;
+    if (options.activeHostUserIds?.has(member.id)) continue;
+
+    qualifiedMembers.push(member);
+  }
+
+  return { qualifiedMembers, rawViewerCount };
+}
+
+/** Lấy mẫu trạng thái host (có mặt/đang stream) và danh sách viewer đủ điều kiện trong voice channel của phòng */
+export async function sampleRoom(
+  client: Client,
+  roomId: string,
+  hostUserId: string,
+  options: ViewerFilterOptions
+): Promise<RoomSample | null> {
   const channel = await getRoomVoiceChannel(client, roomId);
   if (!channel) return null;
 
-  return [...channel.members.values()].filter((m) => m.id !== hostUserId).length;
+  const hostMember = channel.members.get(hostUserId);
+  const hostPresent = Boolean(hostMember);
+  const hostStreaming = Boolean(hostMember && (hostMember.voice.streaming || hostMember.voice.selfVideo));
+  const { qualifiedMembers, rawViewerCount } = filterQualifiedViewers(
+    channel.members.values(),
+    hostUserId,
+    options
+  );
+
+  return {
+    hostPresent,
+    hostStreaming,
+    qualifiedMembers,
+    rawViewerCount,
+  };
 }
 
 /** Nếu host vẫn đang ở trong voice channel của phòng này, kick họ ra (hết giờ live theo lịch đã đặt) */

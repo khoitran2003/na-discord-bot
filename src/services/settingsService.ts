@@ -8,6 +8,11 @@ import {
   CRON_INTERVAL_MINUTES,
   MIN_LIVE_DURATION_MINUTES,
   MIN_VIEWERS,
+  MIN_VIEWER_DWELL_MINUTES,
+  MIN_VIEWER_ACCOUNT_AGE_DAYS,
+  MIN_VIEWER_GUILD_AGE_HOURS,
+  REQUIRE_HOST_STREAMING,
+  MAX_REPEAT_VIEWER_BOOKINGS,
   TIMEZONE,
 } from '../config';
 import dayjs from 'dayjs';
@@ -33,6 +38,11 @@ export interface DynamicSettings {
   cronIntervalMinutes: number;
   minLiveDurationMinutes: number;
   minViewers: number;
+  minViewerDwellMinutes: number;
+  minViewerAccountAgeDays: number;
+  minViewerGuildAgeHours: number;
+  requireHostStreaming: boolean;
+  maxRepeatViewerBookings: number;
   publicTimelineMessageIds: string[];
 }
 
@@ -76,6 +86,11 @@ const DEFAULT_SETTINGS: DynamicSettings = {
   cronIntervalMinutes: CRON_INTERVAL_MINUTES,
   minLiveDurationMinutes: MIN_LIVE_DURATION_MINUTES,
   minViewers: MIN_VIEWERS,
+  minViewerDwellMinutes: MIN_VIEWER_DWELL_MINUTES,
+  minViewerAccountAgeDays: MIN_VIEWER_ACCOUNT_AGE_DAYS,
+  minViewerGuildAgeHours: MIN_VIEWER_GUILD_AGE_HOURS,
+  requireHostStreaming: REQUIRE_HOST_STREAMING,
+  maxRepeatViewerBookings: MAX_REPEAT_VIEWER_BOOKINGS,
   publicTimelineMessageIds: [],
 };
 
@@ -155,10 +170,35 @@ function normalizeSettings(raw: StoredSettings): { settings: DynamicSettings; ch
     }
   }
 
+  const nonNegativeNumberFields = [
+    'minViewerDwellMinutes',
+    'minViewerAccountAgeDays',
+    'minViewerGuildAgeHours',
+    'maxRepeatViewerBookings',
+  ] as const;
+
+  for (const key of nonNegativeNumberFields) {
+    const value = raw[key];
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+      normalized[key] = DEFAULT_SETTINGS[key];
+      changed = true;
+    }
+  }
+
+  if (typeof raw.requireHostStreaming !== 'boolean') {
+    normalized.requireHostStreaming = DEFAULT_SETTINGS.requireHostStreaming;
+    changed = true;
+  }
+
   return { settings: normalized as unknown as DynamicSettings, changed };
 }
 
 let cached: DynamicSettings | null = null;
+
+/** Reset cache settings trong bộ nhớ (chủ yếu dùng cho test isolation). */
+export function clearSettingsCache(): void {
+  cached = null;
+}
 
 export async function getSettings(): Promise<DynamicSettings> {
   if (cached) return cached;

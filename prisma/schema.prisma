@@ -20,15 +20,31 @@ model Booking {
   livestreamContent String    @default("") @map("livestream_content")
   actualStartAt     DateTime?
   actualEndAt       DateTime?
-  peakViewers       Int       @default(0)
+  peakViewers       Int             @default(0)
+  streamSeconds     Int             @default(0)
+  qualifiedViewers  Int             @default(0)
+  suspicious        Boolean         @default(false)
+  suspiciousReason  String?
   isValidLive       Boolean?
   endReason         String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  viewers           BookingViewer[]
 
   @@index([userId])
   @@index([roomId, startTime])
   @@index([status])
+}
+
+model BookingViewer {
+  bookingId    String
+  userId       String
+  dwellSeconds Int      @default(0)
+  firstSeen    DateTime @default(now())
+  booking      Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@id([bookingId, userId])
+  @@index([userId])
 }
 
 model Setting {

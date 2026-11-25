@@ -40,9 +40,24 @@ export const MAX_SLOTS_PER_DAY_PER_USER = 1;
 export const CRON_INTERVAL_MINUTES = 1;
 
 // Thời lượng live tối thiểu (phút) để 1 buổi live được tính là hợp lệ
-export const MIN_LIVE_DURATION_MINUTES = 30;
+export const MIN_LIVE_DURATION_MINUTES = 45;
 
 // Đỉnh số viewer tối thiểu (không tính host) trong buổi live để được tính là hợp lệ
 export const MIN_VIEWERS = 3;
+
+// Chống gian lận: thời gian viewer phải ở lại phòng tối thiểu (phút) để được tính là hợp lệ
+export const MIN_VIEWER_DWELL_MINUTES = 5;
+
+// Chống gian lận: tuổi tài khoản Discord tối thiểu của viewer (ngày)
+export const MIN_VIEWER_ACCOUNT_AGE_DAYS = 7;
+
+// Chống gian lận: thời gian viewer đã tham gia server tối thiểu (giờ)
+export const MIN_VIEWER_GUILD_AGE_HOURS = 24;
+
+// Chống gian lận: chỉ tính thời lượng live khi host đang bật stream/camera
+export const REQUIRE_HOST_STREAMING = true;
+
+// Chống gian lận: số lần tối đa 1 viewer được tính hợp lệ cho cùng 1 host ở các buổi trước (0 = tắt)
+export const MAX_REPEAT_VIEWER_BOOKINGS = 0;
 
 export const TIMEZONE = 'Asia/Ho_Chi_Minh';

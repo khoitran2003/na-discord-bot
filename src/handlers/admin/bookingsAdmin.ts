@@ -73,7 +73,11 @@ async function buildBookingsView(statusFilter: StatusFilter, page: number) {
         const emoji = STATUS_EMOJI[status] ?? '⚪';
         const label = STATUS_LABEL[status] ?? status;
         const ingameRoleId = b.ingameRoleId?.toString() ?? 'N/A';
-        return `${emoji} <@${b.userId}> — ID nhân vật: \`${ingameRoleId}\` — **${roomLabel(b.roomId)}** — ${formatDateTimeVN(b.startTime)}→${formatDateTimeVN(b.endTime)} — ${label}`;
+        const stats =
+          status === 'DONE'
+            ? ` (${Math.floor(b.streamSeconds / 60)}p, ${b.qualifiedViewers}v)${b.suspicious ? ' ⚠️ Nghi ngờ' : ''}`
+            : '';
+        return `${emoji} <@${b.userId}> — ID nhân vật: \`${ingameRoleId}\` — **${roomLabel(b.roomId)}** — ${formatDateTimeVN(b.startTime)}→${formatDateTimeVN(b.endTime)} — ${label}${stats}`;
       })
     : ['(không có booking nào)'];
 

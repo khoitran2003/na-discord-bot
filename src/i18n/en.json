@@ -44,8 +44,8 @@
   "log.adminCancelled": "❌ The organizers cancelled your booking — **{room}** — {time}. Contact the organizers if you need help.",
   "dm.adminCancelled": "Your hosting slot at **{room}** at {time} has been cancelled by the organizers. Contact the organizers if you need help.",
   
-  "validity.valid": "✅ Valid ({duration} min, peak {viewers} viewer(s))",
-  "validity.invalid": "⚠️ Not valid ({duration} min, peak {viewers} viewer(s) — below the minimum requirement)",
+  "validity.valid": "✅ Valid ({duration} min streaming, {viewers} qualified viewer(s))",
+  "validity.invalid": "⚠️ Not valid ({duration} min streaming, {viewers} qualified viewer(s) — below the minimum requirement)",
   
   "errors.generic": "❌ A system error occurred, please try again later.",
   "errors.SLOT_TAKEN": "This time slot was just taken by someone else, please pick another one.",

@@ -44,8 +44,8 @@
   "log.adminCancelled": "❌ BTC đã hủy lịch của bạn — **{room}** — {time}. Liên hệ BTC nếu cần hỗ trợ.",
   "dm.adminCancelled": "Lịch host của bạn tại **{room}** lúc {time} đã bị BTC hủy. Liên hệ BTC nếu cần hỗ trợ.",
   
-  "validity.valid": "✅ Hợp lệ ({duration} phút, đỉnh {viewers} viewer)",
-  "validity.invalid": "⚠️ Không hợp lệ ({duration} phút, đỉnh {viewers} viewer — chưa đạt mức tối thiểu)",
+  "validity.valid": "✅ Hợp lệ ({duration} phút stream, {viewers} viewer đạt chuẩn)",
+  "validity.invalid": "⚠️ Không hợp lệ ({duration} phút stream, {viewers} viewer đạt chuẩn — chưa đạt mức tối thiểu)",
   
   "errors.generic": "❌ Có lỗi hệ thống, vui lòng thử lại sau.",
   "errors.SLOT_TAKEN": "Khung giờ này vừa có người khác đặt mất rồi, bạn chọn giờ khác nhé.",

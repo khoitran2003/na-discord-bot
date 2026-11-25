@@ -10,7 +10,8 @@ import { Lang, t } from '../i18n';
 function formatResultText(result: LiveValidityResult, lang: Lang): string {
   return t(result.isValid ? 'validity.valid' : 'validity.invalid', lang, {
     duration: result.durationMinutes,
-    viewers: result.peakViewers,
+    viewers: result.qualifiedViewers,
+    peak: result.peakViewers,
   });
 }
 
@@ -58,9 +59,10 @@ export async function handleVoiceStateUpdate(oldState: VoiceState, newState: Voi
         booking.username,
         t('log.liveEndedManual', lang, { room: room.label, result: formatResultText(result, lang) })
       );
+      const suspiciousNote = result.suspicious && result.suspiciousReason ? `\n⚠️ Nghi ngờ: ${result.suspiciousReason}` : '';
       await logAdminAudit(
         newState.client,
-        `🏁 <@${userId}> đã kết thúc live tại **${room.label}** (tự rời voice channel).\nKết quả: ${formatResultTextVi(result)}`
+        `🏁 <@${userId}> đã kết thúc live tại **${room.label}** (tự rời voice channel).\nKết quả: ${formatResultTextVi(result)}${suspiciousNote}`
       );
 
       await refreshPublicTimeline(newState.client);

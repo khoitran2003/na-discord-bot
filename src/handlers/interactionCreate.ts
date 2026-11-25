@@ -33,6 +33,8 @@ import {
   handleRulesScheduleModal,
   handleRulesEditLiveValidityButton,
   handleRulesLiveValidityModal,
+  handleRulesEditAntiFraudButton,
+  handleRulesAntiFraudModal,
 } from './admin/rulesAdmin';
 import {
   handleViewBookingsButton,
@@ -95,6 +97,8 @@ export async function handleInteraction(interaction: Interaction) {
           return void (await handleRulesEditScheduleButton(interaction));
         case 'admin_rules_edit_live_validity':
           return void (await handleRulesEditLiveValidityButton(interaction));
+        case 'admin_rules_edit_antifraud':
+          return void (await handleRulesEditAntiFraudButton(interaction));
         case 'admin_view_bookings':
           return void (await handleViewBookingsButton(interaction));
         case 'admin_export_bookings':
@@ -143,6 +147,8 @@ export async function handleInteraction(interaction: Interaction) {
           return void (await handleRulesScheduleModal(interaction));
         case 'admin_modal_rules_live_validity':
           return void (await handleRulesLiveValidityModal(interaction));
+        case 'admin_modal_rules_antifraud':
+          return void (await handleRulesAntiFraudModal(interaction));
         case 'admin_broadcast_modal':
           return void (await handleBroadcastModal(interaction));
       }
